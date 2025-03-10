@@ -3,6 +3,7 @@ const validator = require('validator')
 const bcrypt = require('bcryptjs')
 
 
+
 const userSchema = new mongoose.Schema({
 
     username: {
@@ -22,16 +23,9 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, "Please enter your password"],
-        minLength: 8
+        minLength: 8,
     },
 
-    confirmPassword: {
-        type: String,
-        required:[true, 'Please confirm your password'],
-        validate: function (pass){
-            return pass === this.password
-        }
-    },
     //
     // dateOfBirth: {
     //     type: Date,
@@ -42,7 +36,23 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['male', 'female'],
         required: true
+    },
+
+    isVerified:{
+        type:Boolean,
+        default: false
+    },
+
+    otp:{
+        type: String,
+        default: null
+    },
+
+    otpCreationTime:{
+        type: Date,
+        default: null
     }
+
 
 })
 
@@ -53,16 +63,24 @@ userSchema.pre('save', async function(next){
         const salt = await bcrypt.genSalt(10)
         this.password = await bcrypt.hash(this.password, salt)
 
-        this.confirmPassword = undefined
-
         next()
     } catch(error) {
         next(error)
     }
 
 
-    next()
 })
+
+userSchema.methods.correctPassword = async function (candidatePassword){
+    return await bcrypt.compare(candidatePassword, this.password)
+}
+
+userSchema.set('toJSON', {
+    transform: (doc, ret) => {
+        delete ret.password;
+        return ret;
+    }
+});
 
 
 const Users = mongoose.model('Users', userSchema)
