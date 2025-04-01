@@ -36,9 +36,9 @@ const therapistSchema = new mongoose.Schema({
         default: ''
     },
 
-    specialization: {
+    expertise: {
         type: String,
-        required: [true, 'Your area of specialization']
+        required: [true, 'Your area of specialization is required']
     },
 
     licenseNo: {

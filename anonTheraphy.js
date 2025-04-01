@@ -6,23 +6,23 @@ const userRoutes = require('./routes/userRoutes ')
 const adminRoutes = require('./routes/adminRoute')
 const therapistRoutes = require('./routes/therapistRoutes')
 
-const anonTheraphy = express()
+const anonTherapy = express()
 
 
-anonTheraphy.use(express.json())
+anonTherapy.use(express.json())
 
-anonTheraphy.use('/api/v1/admin', adminRoutes)
+anonTherapy.use('/api/v1/admin', adminRoutes)
 
-anonTheraphy.use('/api/v1/users', userRoutes)
+anonTherapy.use('/api/v1/users', userRoutes)
 
-anonTheraphy.use('/api/v1/therapist', therapistRoutes )
+anonTherapy.use('/api/v1/therapist', therapistRoutes )
 
 
 connectDB()
 
 const port = process.env.PORT || 3000
 
-anonTheraphy.listen( port,() =>{
+anonTherapy.listen( port,() =>{
     console.log(`App running on port ${port}...`)
 })
 

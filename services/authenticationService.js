@@ -1,10 +1,12 @@
-const User = require("../model/userSchema")
+const Client = require('../model/userSchema')
+const Therapist = require('../model/therapistSchema')
 const  jwt = require('jsonwebtoken')
 const catchAsync = require("../exceptions/catchAsync");
 const AppError = require("../exceptions/AppErrors");
 
-exports.signUpToken = id =>{
-    return jwt.sign({id}, process.env.JWT_SECRET, {
+
+exports.signUpToken = (id, role) =>{
+    return jwt.sign({id, role}, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN
     })
 }
@@ -38,20 +40,6 @@ exports.sendOtpToUserEmail = (email, otp, name) =>{
 
 }
 
-exports.protect = catchAsync (async (req,res,next)=>{
-    let token;
-    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
-         token = req.headers.authorization.split(' ')[1]
-    }
-
-    if(!token){
-        throw new AppError('Please Login to gain access', 401)
-    }
-
-
-
-    next()
-})
 
 exports.otpVerification = async (otp, Model, userId ) => {
     const currentTime = Date.now()
@@ -73,8 +61,8 @@ exports.otpVerification = async (otp, Model, userId ) => {
     if(realOtp !== otp)throw new AppError("Invalid otp", 400)
 
     user.isVerified = true
-    user.otp = null
-    user.otpCreationTime = null
+    user.otp = undefined
+    user.otpCreationTime = undefined
     await user.save()
     return exports.signUpToken(userId)
 }
@@ -100,4 +88,85 @@ exports.login = catchAsync( async (req, res, Model) =>{
         status: 'success',
         token
     })
+})
+
+const getUserByIdAndRole = async (id,role)=>{
+    let user;
+    switch (role){
+        case 'client':
+            user = await Client.findById(id);
+            break;
+        case 'Therapist':
+            user = await Therapist.findById(id);
+            break;
+        default:
+            throw new AppError('Invalid user role', 400)
+    }
+    if(!user){
+        throw new AppError('User not found ', 404)
+    }
+
+    return user
+}
+
+exports.protect = catchAsync (async (req,res,next)=>{
+    let token;
+    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
+        token = req.headers.authorization.split(' ')[1]
+    }
+
+    if(!token){
+        throw new AppError('Please Login to gain access', 401)
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+    req.user = await getUserByIdAndRole(decoded.id, decoded.role)
+
+
+    next()
+})
+
+exports.restrictTo = (...roles)=>{
+    return(req, res, next)=>{
+        if(!roles.includes(req.user.role)){
+        throw new AppError('You do not have permission to perform this action', 403)
+        }
+
+
+
+        next()
+    }
+
+}
+exports.validateInput = (req, res, next)=>{
+    const {email, amount} = req.body
+    if(!email || typeof email !== 'string'){
+        return res.status(400).json({
+            message: 'Valid email is required'
+        })
+
+    }
+}
+
+const createPasswordResetToken = function (Model){
+    const resetToken = crypto.randomBytes(32).toString('hex')
+
+    Model.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+   Model.passwordResetExpires = Date.now() + 10 * 60 * 1000
+
+    return resetToken
+}
+
+exports.forgotPassword = catchAsync( async (Model, req, res)=>{
+    const {email} = req.body
+   const user = await Model.findOne({email})
+    if(!user){
+        res.status(400).send( 'No user with such email')
+    }
+
+  const resetToken = createPasswordResetToken(user)
+
+    await user.save()
+
+
 })
