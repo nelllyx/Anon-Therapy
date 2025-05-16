@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: Object.values(userRoles),
-        default:  userRoles.USER,
+        default:  userRoles.CLIENT,
         required: true,
 
     },
@@ -87,6 +87,7 @@ userSchema.methods.correctPassword = async function (candidatePassword){
 userSchema.set('toJSON', {
     transform: (doc, ret) => {
         delete ret.password;
+        delete ret.otp;
         return ret;
     }
 });

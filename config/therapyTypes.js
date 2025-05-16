@@ -1,8 +1,8 @@
 
 const therapyTypesConfig = {
-    Basic: ['career and life coaching','crisis intervention'],
-    Standard: ['couples therapy','career and life coaching', 'crisis intervention'],
-    Premium: ['couples therapy', 'family therapy', 'career and life coaching', 'crisis intervention', 'trauma therapy']
+    Basic: ['nutritional therapy','adolescent Therapy'],
+    Standard: ['marriage & family therapy','nutritional therapy','cognitive therapy'],
+    Premium: ['clinical psychology', 'marriage & family therapy','nutritional therapy','cognitive therapy']
 }
 
 module.exports = therapyTypesConfig

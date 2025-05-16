@@ -5,6 +5,7 @@ const AppError = require("../exceptions/AppErrors");
 
 
 const bookingSchema = new mongoose.Schema({
+
     userId: {
         type:mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -46,9 +47,7 @@ bookingSchema.pre('save', async function(next){
     try{
 
         if (!this.plan._id) throw new AppError('Plan ID is required.');
-
         const plan = await Plans.findById(this.plan._id)
-        if(!plan)throw new AppError('plan not found')
         const allowedTherapies = TherapyTypes[plan.name]
         if (!allowedTherapies.includes(this.selectedTherapy)) {
             throw new AppError('Selected therapy is not allowed for this plan');

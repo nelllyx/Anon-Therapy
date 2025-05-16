@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
+const userRoles = require("../config/userRoles");
 
 const therapistSchema = new mongoose.Schema({
     firstName: {
@@ -36,7 +37,7 @@ const therapistSchema = new mongoose.Schema({
         default: ''
     },
 
-    expertise: {
+    specialization: {
         type: String,
         required: [true, 'Your area of specialization is required']
     },
@@ -66,6 +67,14 @@ const therapistSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now()
+    },
+
+    role: {
+        type: String,
+        enum: Object.values(userRoles),
+        default:  userRoles.THERAPIST,
+        required: true,
+
     },
 
     otp:{
@@ -100,6 +109,7 @@ therapistSchema.methods.correctPassword = async function (candidatePassword){
 therapistSchema.set('toJSON', {
     transform: (doc, ret) => {
         delete ret.password;
+        delete  ret.otp;
         return ret;
     }
 });

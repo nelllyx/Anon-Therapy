@@ -3,6 +3,7 @@ const Therapist = require('../model/therapistSchema')
 const  jwt = require('jsonwebtoken')
 const catchAsync = require("../exceptions/catchAsync");
 const AppError = require("../exceptions/AppErrors");
+const crypto = require('crypto')
 
 
 exports.signUpToken = (id, role) =>{
@@ -14,13 +15,17 @@ exports.signUpToken = (id, role) =>{
 exports.generateUserOtp = async function (Model){
     const otpCreatedAt = Date.now()
 
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    let result = ''
-    for(let index = 0; index < 6; index++){
-        const randomIndex = Math.floor(Math.random() * characters.length)
-        result += characters[randomIndex]
+    const uniqueDigits = new Set();
+
+    while (uniqueDigits.size < 6) {
+        // Generate a random byte and take its value modulo 10
+        const randomByte = crypto.randomBytes(1)[0];
+        const digit = randomByte % 10;
+        uniqueDigits.add(digit);
+
     }
-    Model.otp = result
+
+    Model.otp = Array.from(uniqueDigits).join('')
     Model.otpCreationTime = otpCreatedAt
    await Model.save()
 }
@@ -42,6 +47,7 @@ exports.sendOtpToUserEmail = (email, otp, name) =>{
 
 
 exports.otpVerification = async (otp, Model, userId ) => {
+
     const currentTime = Date.now()
     const user = await Model.findById(userId)
     if(!user)throw new AppError('User not found', 404)
@@ -110,6 +116,7 @@ const getUserByIdAndRole = async (id,role)=>{
 }
 
 exports.protect = catchAsync (async (req,res,next)=>{
+
     let token;
     if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
         token = req.headers.authorization.split(' ')[1]
