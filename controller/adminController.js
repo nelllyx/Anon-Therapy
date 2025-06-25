@@ -90,8 +90,10 @@ exports.changeAdminPassword = catchAsync(async (req, res) => {
 // Existing plan management
 exports.createPlan = catchAsync(
     async (req,res) =>{
-    const {name, price, features} = req.body
-     const  newPlan = await Subscription.create({name, price, features})
+
+    const {name, price, features, sessionsPerWeek} = req.body
+
+     const  newPlan = await Subscription.create({name, price, features, sessionsPerWeek})
         res.status(201).json({
             status: 'success',
             data: {

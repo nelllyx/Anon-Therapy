@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs')
 const userRoles = require("../config/userRoles");
 
 const therapistSchema = new mongoose.Schema({
+
     firstName: {
         type: String,
         required: [true, 'Please enter your first name']
@@ -32,7 +33,19 @@ const therapistSchema = new mongoose.Schema({
         required: true
     },
 
-    bioData: {
+    phoneNumber: {
+        type: String,
+        unique: true,
+        required: true
+    },
+
+    yearsOfExperience: {
+        type: Number,
+        maxLength:2,
+      required: true,
+    },
+
+    bio: {
         type: String,
         default: ''
     },
@@ -85,7 +98,28 @@ const therapistSchema = new mongoose.Schema({
     otpCreationTime:{
         type: Date,
         default: null
-    }
+    },
+
+    currentClients: {
+        type: Number,
+        default: 0
+     },
+
+    maxClients: Number,
+
+    clientSubscriptions: [{
+        userId: {
+            type:mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        subscriptionStartDate: Date,
+        subscriptionEndDate: Date,
+        status: {
+            type: String,
+            enum: ['active', 'expired']
+        }
+    }]
 
 })
 

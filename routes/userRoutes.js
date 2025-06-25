@@ -5,12 +5,15 @@ const { protect } = require('../services/authenticationService');
 
 // Public routes
 router.post('/signup', userController.signUp);
-router.post('/login', userController.login);
+
 
 // Protected routes
 router.use(protect);
-router.post('/bookings', userController.createBookings);
+router.post('/subscriptions', userController.createSubscriptions);
 router.post('/payment/initialize', userController.initializePayment);
 router.get('/payment/verify/:reference', userController.confirmPayment);
+router.get('/payment-history', userController.checkPaymentHistory);
+router.get('/subscription/plan', userController.checkPHistory);
+
 
 module.exports = router; 

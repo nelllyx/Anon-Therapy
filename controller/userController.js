@@ -7,7 +7,7 @@ const transport = require('../config/nodeMailer')
 const Plans = require('../model/userPlans')
 const userRoles = require("../config/userRoles");
 const Payment = require('../model/paymentSchema')
-const Bookings = require('../model/userBooking')
+const Subscriptions = require('../model/Subscriptions')
 
 
 exports.signUp = catchAsync(
@@ -17,7 +17,7 @@ exports.signUp = catchAsync(
         const isEmail = await Users.findOne({email})
         if(isUsername) throw new AppError("Username already exist", 400)
         if(isEmail) throw new AppError("Email already exist", 400)
-        if (!Object.values(userRoles).includes(role))throw new AppError("Invalid role", 404)
+        if (!Object.values(userRoles).includes(role))throw new AppError("Invalid role", 400)
 
         const newUser = await User.createUser({username, email, password, gender,role})
 
@@ -41,61 +41,41 @@ exports.signUp = catchAsync(
 
 })
 
-exports.login = catchAsync(
-    async (req,res) =>{
 
-        const {email, password} = req.body
-        const user = await Users.findOne({email})
-        const token = auth.signUpToken(user._id, user.role)
+exports.createSubscriptions = catchAsync(
 
-        user.otpCreationTime = Date.now()
-
-        await user.save()
-
-
-        if(!email || !password){
-            throw new AppError("Email and password required", 400)
-        }
-        if(!user || !(await user.correctPassword(password)) ){
-            throw new AppError("Invalid Email or Password", 401)
-        }
-
-        if(user.isVerified === false){
-            throw new AppError("Please complete your email verification", 400)
-        }
-
-        res.status(200).json({
-            user,
-            status: 'success',
-            token
-        })
-    })
-
-
-exports.createBookings = catchAsync(
     async (req,res)=>{
 
-        console.log('Request body:', req.body);
+        const { planName} = req.body
 
-        const { planName, selectedTherapy} = req.body
-
-    const normalizedTherapy =  selectedTherapy.toLowerCase()
-        console.log(normalizedTherapy)
+   // const normalizedTherapy =  selectedTherapy.toLowerCase()
         const userId = req.user.id
         const plan = await Plans.findOne({name: planName})
-        if(!plan)throw new AppError('Plan not found')
-        const validateBooking = await Bookings.findOne({userId, isBookingActive: true}).exec()
-        if(validateBooking)throw new AppError('You already have an active booking. Please complete or cancel it before making a new booking.')
 
-        const newBooking = await User.createBooking({userId,  plan: plan._id , selectedTherapy: normalizedTherapy})
+        if(!plan)throw new AppError('Plan not found')
+        const validateSubscription = await Subscriptions.findOne({userId, isSubscriptionActive: true}).exec()
+        if(validateSubscription)throw new AppError('You already have an active subscription. Please complete or cancel it before making a new subscription.')
+
+        const newSubscription = await User.createSubscription({userId,  plan: plan._id})
+
+
+        if(planName === 'Basic'){
+
+            newSubscription.status = 'subscribed'
+            newSubscription.isSubscriptionActive = true
+            await newSubscription.save()
+
+        }
+
+
         res.status(201).json({
-            message: 'Booking created successfully',
+            message: 'Subscription created successfully',
             data: {
                 plan: plan.name,
                 price: plan.price,
                 features: plan.features,
-                selectedTherapy: newBooking.selectedTherapy,
-                id: newBooking._id
+               // selectedTherapy: newBooking.selectedTherapy,
+                id: newSubscription._id
             }
         })
     }
@@ -103,9 +83,8 @@ exports.createBookings = catchAsync(
 
 exports.initializePayment = catchAsync(
     async (req,res)=>{
-        console.log('Request body:', req.body);
         const userId = req.user.id
-        const {email, amount, bookingId} = req.body
+        const {email, amount, subscriptionId} = req.body
 
         const response = await fetch ('https://api.paystack.co/transaction/initialize',{
             method: 'POST',
@@ -124,9 +103,9 @@ exports.initializePayment = catchAsync(
             throw new AppError(`PayStack API error: ${error}`)
         }
 
-        await Payment.create({email, amount, bookingId, userId})
+        await Payment.create({email, amount, subscriptionId, userId})
         const data = await response.json()
-
+        console.log(data)
         res.status(200).json({
             success: true,
             message: 'Payment initialized successfully',
@@ -139,7 +118,6 @@ exports.confirmPayment = catchAsync(
     async (req,res)=>{
         const paymentReference = req.params.reference
         const userId = req.user.id
-        console.log(userId)
         const response = await fetch (`https://api.paystack.co/transaction/verify/${paymentReference}`,{
             method: 'GET',
             headers: {
@@ -150,17 +128,21 @@ exports.confirmPayment = catchAsync(
         const data = await response.json()
         if(response.status === 200){
             const transactionStatus = data.data.status;
-            if(transactionStatus === 'success'){
+            if (transactionStatus === 'success') {
+                const payment = await Payment.findOne({ userId }).exec();
+                payment.status = 'successful';
+                await payment.save();
+                const subscription = await Subscriptions.findOne({ userId }).exec();
+                subscription.status = 'subscribed';
+                subscription.isSubscriptionActive = true;
+                await subscription.save();
+            } else if (transactionStatus === 'failed') {
+                const payment = await Payment.findById(userId).exec();
+                payment.status = 'failed';
+                await payment.save();
+            }else if(transactionStatus === 'abandoned'){
                 const payment = await Payment.findOne({userId}).exec()
-                payment.status = 'successful'
-                await payment.save()
-                const booking = await Bookings.findOne({userId})
-                booking.status = 'confirmed'
-                booking.isBookingActive = true
-                await booking.save()
-            }else if(transactionStatus === 'failed'){
-                const payment = await Payment.findById(userId)
-                payment.status = 'failed'
+                payment.status = 'abandoned'
                 payment.save()
             }
 
@@ -177,5 +159,33 @@ exports.confirmPayment = catchAsync(
     }
 )
 
+exports.checkPaymentHistory = catchAsync(
 
+    async (req,res,next) =>{
+        const userId = req.user.id
+        const User = await Users.findById(userId)
+
+        if(User){
+            const payments = await Payment.find({userId:userId})
+
+            if (payments.length === 0) {
+                return res.status(200).json({ message: 'No payment history found.' });
+            }
+
+            const paymentData = payments.map(payment => ({
+                email: User.email, // user email, since you fetched user
+                amount: payment.amount,
+                status: payment.status,
+                date: payment.dateOfPayment,
+            }));
+
+            res.status(200).json({
+                data: paymentData
+
+
+            })
+        }else throw new AppError('User Not Found', 404)
+
+    }
+)
 

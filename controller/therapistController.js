@@ -2,8 +2,10 @@ const catchAsync = require('../exceptions/catchAsync')
 const therapist = require('../model/therapistSchema')
 const appError = require('../exceptions/AppErrors')
 const auth = require('../services/authenticationService')
+const multer = require('multer')
 const transport = require("../config/nodeMailer");
 
+//const upload = multer({dest:})
 
 exports.register = catchAsync(
     async (req,res,next)=>{

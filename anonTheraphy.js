@@ -2,9 +2,9 @@ const dotenv = require("dotenv");
 const express = require('express')
 const connectDB = require('./config/database')
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const AppError = require('./exceptions/AppErrors');
 const catchAsync = require('./exceptions/catchAsync')
-
 dotenv.config({path: './config.env'})
 
 const userRoutes = require('./routes/userRoutes')
@@ -14,14 +14,76 @@ const Roles = require("./config/userRoles");
 const auth = require("./services/authenticationService");
 const Users = require("./model/userSchema");
 const Therapist = require("./model/therapistSchema");
-
+const {CLIENT, THERAPIST} = require("./config/userRoles");
 const anonTherapy = express()
 
 
 anonTherapy.use(express.json())
-anonTherapy.use(cors({origin: 'http://localhost:5173'}))
+anonTherapy.use(cookieParser());
+anonTherapy.use(cors({origin: 'http://localhost:5173', credentials: true}))
+
+// Global login route
+anonTherapy.post('/api/v1/login', catchAsync(async (req, res, next) => {
+
+    const { email, password } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+        return next(new AppError('Please provide email and password', 400));
+    }
 
 
+    const [client, therapist] = await Promise.all([
+        Users.findOne({ email: email }),
+        Therapist.findOne({ email: email })
+    ]);
+
+    const user = client || therapist;
+
+        if(!user || (! await user.correctPassword(password))) return next  (new AppError("Invalid Email or Password", 401))
+
+        // Check if user is verified
+        if (!user.isVerified) {
+            return next(new AppError('Please complete your email verification', 401));
+        }
+
+        // Generate token
+        const token = auth.signUpToken(user._id, user.role);
+
+        // Prepare user data based on type
+    const userType = user.role
+        const userData = userType === CLIENT
+            ? {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role
+            }
+            : {
+                id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role
+            };
+
+
+    // res.cookie('auth_token', token, {
+    //     httpOnly: true,
+    //     secure: process.env.NODE_ENV === 'production',
+    //     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    //     maxAge: 3600000,    // 1 hour expiry
+    //     path: '/'
+    // });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            user: userData,
+            token
+        }
+    });
+}));
 
 // Global OTP verification route
 anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
@@ -38,9 +100,12 @@ anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
     }
 
     try {
-        if (userType === 'client') {
-            const token = await auth.otpVerification(otp, Users, id);
+        if (userType === Roles.CLIENT) {
             const user = await Users.findById(id);
+            if (!user) {
+                return next(new AppError('User not found', 404));
+            }
+            const token = await auth.otpVerification(otp, Users, id);
             return res.status(200).json({
                 status: 'success',
                 token,
@@ -53,9 +118,12 @@ anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
                     }
                 }
             });
-        } else if (userType === 'therapist') {
-            const token = await auth.otpVerification(otp, Therapist, id);
+        } else if (userType === Roles.THERAPIST) {
             const user = await Therapist.findById(id);
+            if (!user) {
+                return next(new AppError('User not found', 404));
+            }
+            const token = await auth.otpVerification(otp, Therapist, id);
             return res.status(200).json({
                 status: 'success',
                 token,
@@ -75,7 +143,20 @@ anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
     }
 }));
 
+anonTherapy.post('/api/v1/logout', (req, res) => {
 
+    res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        path: '/'
+    });
+    
+    res.status(200).json({
+        status: 'success',
+        message: 'Logged out successfully'
+    });
+});
 
 anonTherapy.use('/api/v1/admin', adminRoutes)
 anonTherapy.use('/api/v1/client', userRoutes)
@@ -105,7 +186,7 @@ anonTherapy.use((err, req, res, next) => {
         if (err.isOperational) {
             res.status(err.statusCode).json({
                 status: err.status,
-                message: err.message
+                message: err
             });
         } else {
             // Programming or unknown errors

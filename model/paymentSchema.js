@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 
 const paymentSchema = new mongoose.Schema({
+
     email: {
         type: String,
         required: true
@@ -11,7 +12,7 @@ const paymentSchema = new mongoose.Schema({
         required: true
     },
 
-    bookingId: {
+    subscriptionId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "userBooking",
         required: true
@@ -25,7 +26,7 @@ const paymentSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ['pending', 'successful', 'failed'],
+        enum: ['pending', 'successful', 'failed', 'abandoned'],
         default: 'pending'
     },
 

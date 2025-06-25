@@ -21,7 +21,19 @@ const monthlyPlanSchema = new mongoose.Schema({
     therapyTypes: {
         type: [String],
         required: true
-    }
+    },
+
+    sessionsPerWeek: {
+        type: Number,
+        required: true
+    },
+
+    createdAt:{
+        type: Date,
+        default: Date.now()
+    },
+
+    updatedAt: Date
 
 })
 

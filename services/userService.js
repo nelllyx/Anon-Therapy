@@ -1,5 +1,5 @@
 const User = require('../model/userSchema')
-const Booking = require('../model/userBooking')
+const Subscription = require('../model/Subscriptions')
 const AppError = require('../exceptions/AppErrors')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
@@ -9,8 +9,8 @@ exports.createUser = async(userData)=>{
     return User.create(userData)
 }
 
-exports.createBooking = async(bookingData) =>{
-    return  Booking.create(bookingData)
+exports.createSubscription = async(bookingData) =>{
+    return  Subscription.create(bookingData)
 }
 
 exports.register = async (userData) => {
