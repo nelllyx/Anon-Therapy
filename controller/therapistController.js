@@ -1,26 +1,22 @@
 const catchAsync = require('../exceptions/catchAsync')
 const therapist = require('../model/therapistSchema')
-const appError = require('../exceptions/AppErrors')
 const auth = require('../services/authenticationService')
-const multer = require('multer')
-const transport = require("../config/nodeMailer");
+const {transporter} = require("../config/nodeMailer");
+const AppError = require('../exceptions/AppErrors');
 
-//const upload = multer({dest:})
 
-exports.register = catchAsync(
+ exports.register = catchAsync(
     async (req,res,next)=>{
 
         const existingTherapist = await therapist.findOne({email: req.body.email})
 
         if(existingTherapist)throw  new appError("Email already exist", 400)
 
-
         const newTherapist = await therapist.create(req.body)
-
 
         await auth.generateUserOtp(newTherapist)
 
-        await transport.sendMail(auth.sendOtpToUserEmail(newTherapist.email, newTherapist.otp, newTherapist.firstName),(err, info) =>{
+        await transporter.sendMail(auth.sendOtpToUserEmail(newTherapist.email, newTherapist.otp, newTherapist.firstName),(err, info) =>{
 
             if(err){
                 return console.error('Error occurred while sending email:', err)
@@ -38,15 +34,33 @@ exports.register = catchAsync(
 
 })
 
-exports.vetifyOtp = catchAsync(async (req, res)=>{
-    const {id, otp } = req.body
-    const token  = await auth.otpVerification(otp, therapist, id)
 
-    res.status(200).json({
-        token
+exports.updatePassword = catchAsync( async (req, res, next) => {
+
+    const userId = req.user.id
+    const password = req.body
+
+    const Therapist = await  therapist.findOne (userId)
+
+    if(!Therapist) return next(new AppError("User not found", 400))
+
+
+    if(! await therapist.correctPassword(password)) return next(new AppError("Incorrect password", 400))
+
+    therapist.password = password
+
+    await therapist.save
+    
+
+    res.status(201).json({
+        status: 'success',
+        data:{
+            therapist: newTherapist
+        }
+
     })
+
+
 })
 
-exports.login = (req,res)=>{
-    auth.login(req,res,therapist)
-}
+

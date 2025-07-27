@@ -1,6 +1,7 @@
 const catchAsync = require('../exceptions/catchAsync')
 const User = require('../services/userService')
-const auth = require('../services/authenticationService')
+const {generateUserOtp, sendOtpToUserEmail, validateSelectedDay, generateSessionDates,
+    assignTherapistToClient, calculateSubscriptionEndDate} = require('../services/authenticationService')
 const Users = require("../model/userSchema")
 const AppError = require("../exceptions/AppErrors");
 const transport = require('../config/nodeMailer')
@@ -8,6 +9,9 @@ const Plans = require('../model/userPlans')
 const userRoles = require("../config/userRoles");
 const Payment = require('../model/paymentSchema')
 const Subscriptions = require('../model/Subscriptions')
+const SessionPreference = require('../model/sessionPreferenceSchema')
+const Session = require("../model/sessionSchema");
+const Therapist = require("../model/therapistSchema");
 
 
 exports.signUp = catchAsync(
@@ -21,9 +25,9 @@ exports.signUp = catchAsync(
 
         const newUser = await User.createUser({username, email, password, gender,role})
 
-      await auth.generateUserOtp(newUser)
+      await generateUserOtp(newUser)
 
-       await transport.sendMail(auth.sendOtpToUserEmail(email, newUser.otp ,username),(err, info) =>{
+       await transport.sendMail(sendOtpToUserEmail(email, newUser.otp ,username),(err, info) =>{
 
             if(err){
                 return console.error('Error occurred while sending email:', err)
@@ -53,16 +57,25 @@ exports.createSubscriptions = catchAsync(
         const plan = await Plans.findOne({name: planName})
 
         if(!plan)throw new AppError('Plan not found')
+
+        const sessionsPerWeek = plan.sessionsPerWeek
+
+        const maxSession = sessionsPerWeek * 4
+
+        const endDate = calculateSubscriptionEndDate()
+
         const validateSubscription = await Subscriptions.findOne({userId, isSubscriptionActive: true}).exec()
+
         if(validateSubscription)throw new AppError('You already have an active subscription. Please complete or cancel it before making a new subscription.')
 
-        const newSubscription = await User.createSubscription({userId,  plan: plan._id})
+        const newSubscription = await User.createSubscription({userId,  planId: plan._id, maxSession: maxSession, sessionsPerWeek, endDate})
 
 
         if(planName === 'Basic'){
 
             newSubscription.status = 'subscribed'
             newSubscription.isSubscriptionActive = true
+            newSubscription.endDate = endDate
             await newSubscription.save()
 
         }
@@ -81,8 +94,9 @@ exports.createSubscriptions = catchAsync(
     }
 )
 
+
 exports.initializePayment = catchAsync(
-    async (req,res)=>{
+    async (req,res)=> {
         const userId = req.user.id
         const {email, amount, subscriptionId} = req.body
 
@@ -159,9 +173,79 @@ exports.confirmPayment = catchAsync(
     }
 )
 
+
+
+exports.createBooking = catchAsync(
+
+    async (req, res, next) => {
+
+        const userId = req.user.id
+
+        const Subscription = await Subscriptions.findOne({userId: userId, isSubscriptionActive: true})
+
+        const subscriptionId = Subscription._id
+
+        const {planName, therapyType, selectedDay, preferredTime} = req.body
+
+        req.body.therapyType = therapyType.toLowerCase()
+
+       const normalizedPlanName = planName.toLowerCase()
+
+        console.log(normalizedPlanName)
+
+
+        const plan = await Plans.findOne({name: planName})
+
+        if(!plan)throw new AppError('Plan not found', 404)
+
+        const planId = plan._id
+
+        validateSelectedDay(planName,selectedDay)
+
+
+        await SessionPreference.create({userId , subscriptionId, planId, therapyType, selectedDay, preferredTime});
+
+        const selectedTherapist =  await assignTherapistToClient(userId, subscriptionId, planName, Subscription.status, therapyType)
+
+        if (!selectedTherapist) throw new AppError('No therapist available', 404);
+
+        const sessionDates = generateSessionDates(selectedDay,normalizedPlanName)
+
+        console.log("Generated sessionDates:", sessionDates);
+
+        const sessions = await Promise.all(
+            sessionDates.map(async (date) => {
+                return await Session.create({
+                    userId,
+                    therapistId: selectedTherapist._id,
+                    Date: date,
+                    startTime: null,
+                    endTime: null,
+                    subscriptionId,
+                    therapyType,
+                    status: 'scheduled',
+                });
+            })
+        );
+
+
+        // Update therapist's client list
+        await Therapist.findByIdAndUpdate(selectedTherapist._id, {$inc: { currentClients: 1 }
+        });
+
+       // await session.save();
+
+        res.status(200).json({
+            success: true,
+            sessions
+        })
+
+    })
+
+
 exports.checkPaymentHistory = catchAsync(
 
-    async (req,res,next) =>{
+    async (req,res,next) => {
         const userId = req.user.id
         const User = await Users.findById(userId)
 
@@ -185,6 +269,32 @@ exports.checkPaymentHistory = catchAsync(
 
             })
         }else throw new AppError('User Not Found', 404)
+
+    }
+)
+
+exports.checkActiveSubscription = catchAsync(
+
+    async (req,res,next) =>{
+        const userId = req.user.id
+
+        const subscription = await Subscriptions.findOne({userId})
+            .populate({ path: 'planId', select: 'name' })
+            .exec();
+        if(!subscription)throw new AppError('Subscription not found for this user', 404)
+
+        if(subscription.isSubscriptionActive === true) {
+
+            res.status(200).json({
+             status: 'success',
+            data:{
+                subscription,
+                planName: subscription.planId.name
+
+            }
+
+            })
+        }
 
     }
 )

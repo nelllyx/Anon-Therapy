@@ -1,7 +1,13 @@
 const mongoose = require('mongoose')
-const Plans = require('../model/userPlans')
-const TherapyTypes = require('../config/therapyTypes')
-const AppError = require("../exceptions/AppErrors");
+
+
+function formatToDDMMYYYY(date) {
+    if (!date) return null;
+    const day = String(date.getDate()).padStart(2, '0'); // Ensures 2 digits (e.g., "05")
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
 
 
 const subscriptionSchema = new mongoose.Schema({
@@ -13,7 +19,7 @@ const subscriptionSchema = new mongoose.Schema({
     },
 
 
-    plan: {
+    planId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "clientPlan",
         required: true
@@ -36,58 +42,30 @@ const subscriptionSchema = new mongoose.Schema({
     },
 
     startDate: {
-      type: Date,
-      default: null,
+        type: Date,
+        default: Date.now,
+        get: formatToDDMMYYYY
     } ,
-
 
     endDate: {
         type: Date,
-        default: null,
+        get: formatToDDMMYYYY
     },
 
-    sessionLimit: {
+    sessionsPerWeek:{
         type: Number,
         required: true,
     },
-    
-    sessions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Session' }],
+
+    maxSession : {
+        type: Number,
+        required: true
+    },
 
 
-    // selectedTherapy: {
-    //     type: String,
-    //     required: true
-    // },
-    //
-    // selectedDays: {
-    //   type: String,
-    //   enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-    //     required: true
-    // },
-    //
-    // timePreference: {
-    //     type: String,
-    //     enum: ['morning', 'afternoon', 'evening'],
-    //     required: true
-    // }
+}, { toJSON: { getters: true } })
 
 
-})
-
-// subscriptionSchema.pre('save', async function(next){
-//     try{
-//
-//         if (!this.plan._id) throw new AppError('Plan ID is required.');
-//         const plan = await Plans.findById(this.plan._id)
-//         const allowedTherapies = TherapyTypes[plan.name]
-//         if (!allowedTherapies.includes(this.selectedTherapy)) {
-//             throw new AppError('Selected therapy is not allowed for this plan');
-//     }
-//         next()
-//     }catch (error){
-//        next(error)
-//     }
-// })
 
 const Subscriptions = mongoose.model('Subscriptions',subscriptionSchema)
 

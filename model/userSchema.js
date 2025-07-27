@@ -27,12 +27,6 @@ const userSchema = new mongoose.Schema({
         minLength: 8,
     },
 
-    //
-    // dateOfBirth: {
-    //     type: Date,
-    //     required: true
-    // },
-
     gender:{
         type: String,
         enum: ['male', 'female'],
@@ -60,7 +54,13 @@ const userSchema = new mongoose.Schema({
     otpCreationTime:{
         type: Date,
         default: null
-    }
+    },
+
+    passwordChangedAt: Date,
+
+    passwordResetToken: String,
+
+    passwordResetExpires: Date,
 
 
 })
@@ -83,6 +83,13 @@ userSchema.pre('save', async function(next){
 userSchema.methods.correctPassword = async function (candidatePassword){
     return await bcrypt.compare(candidatePassword, this.password)
 }
+
+userSchema.pre('save', function(next){
+    if(!this.isModified('password') || this.isNew) return next();
+
+    this.passwordChangedAt = Date.now() - 1000
+    next()
+})
 
 userSchema.set('toJSON', {
     transform: (doc, ret) => {

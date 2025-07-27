@@ -5,9 +5,12 @@ const catchAsync = require("../exceptions/catchAsync");
 const AppError = require("../exceptions/AppErrors");
 const crypto = require('crypto')
 const userRoles = require('../config/userRoles')
-const ClientSubscription = require('../model/sessionSchema')
+const {generateResetEmail, generateOtpEmail} = require('../config/nodeMailer')
+
+
 
 exports.signUpToken = (id, role) => {
+
     if (!id || !role) {
         throw new AppError('Invalid token data', 400);
     }
@@ -29,6 +32,7 @@ exports.signUpToken = (id, role) => {
 }
 
 exports.generateUserOtp = async function (Model){
+
     const otpCreatedAt = Date.now()
 
     const uniqueDigits = new Set();
@@ -48,19 +52,51 @@ exports.generateUserOtp = async function (Model){
 
 exports.sendOtpToUserEmail = (email, otp, name) =>{
 
+    const expiryTime = '15 minutes';
+    const appName = 'Anonymous Therapy';
+    const supportEmail = 'support@example.com';
+
+    const { html, text } = generateOtpEmail(
+        name,
+        otp,
+        expiryTime,
+        appName,
+        supportEmail
+    );
+
+
     return {
         from: process.env.SENDER_EMAIL,
         to: email,
-        subject: `Welcome to Anonymous Therapy. Here's your verification code`,
-        text: `Hi ${name} Welcome to Anonymous Therapy. Use the code below to complete your registration.
-         ${otp}
-         This code expires in 15 minutes.
-         `
+        subject: `🔑 Your OTP for ${appName} – Expires in ${expiryTime}!`,
+        html: html
 
     }
 
 }
 
+exports.sendPasswordResetTokenToUserEmail = (resetLink, userName, userEmail) =>{
+
+    const expiryTime = '10 minutes'; // Adjust as needed
+    const appName = 'Anonymous Therapy';
+    const supportEmail = 'support@example.com';
+
+    const { html, text } = generateResetEmail(
+        userName,
+        resetLink,
+        expiryTime,
+        appName,
+        supportEmail
+    );
+
+   return  {
+        from: `"${appName}" <no-reply@process.env.SENDER_EMAIL>`,
+        to: userEmail,
+        subject: '🔒 Reset Your Password – Action Required',
+        html: html,
+    };
+
+}
 
 exports.otpVerification = async (otp, Model, userId) => {
     const currentTime = Date.now();
@@ -100,14 +136,13 @@ exports.otpVerification = async (otp, Model, userId) => {
     }
 
     // Log the values being passed to signUpToken for debugging
-    console.log('Token generation data:', {
-        id: user._id.toString(),
-        role: user.role
-    });
+    // console.log('Token generation data:', {
+    //     id: user._id.toString(),
+    //     role: user.role
+    // });
 
     return exports.signUpToken(user._id, user.role);
 }
-
 
 exports.login = catchAsync( async (req, res, Model) =>{
 
@@ -158,6 +193,7 @@ exports.getUserByIdAndRole = async (id, role) => {
 }
 
 exports.protect = catchAsync(async (req, res, next) => {
+
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
@@ -171,7 +207,7 @@ exports.protect = catchAsync(async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         if (!decoded.id || !decoded.role) {
-            throw new AppError('Invalid token format', 401);
+             new AppError('Invalid token format', 401);
         }
 
         req.user = await exports.getUserByIdAndRole(decoded.id, decoded.role);
@@ -200,7 +236,36 @@ exports.restrictTo = (...roles)=>{
 
 }
 
-exports.assignTherapistToClient = async function (User, planType, subscriptionStatus, therapyType){
+exports.validateSelectedDay = function (selectedDay, plan) {
+
+    const allowedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+    if (plan === 'Basic') {
+
+        if(Array.isArray(selectedDay)) throw new Error('Only one day can be selected.');
+
+        if (!allowedDays.includes(selectedDay))throw new Error('Invalid day selected. Only weekdays (Monday-Friday) are allowed.');
+
+    }else if( plan === 'Standard'){
+
+        if(!Array.isArray(selectedDay) || selectedDay.length !== 2) throw new Error('Standard plan users must select exactly two days.');
+
+        if (selectedDay.some(day => !allowedDays.includes(day))) {
+            throw new Error('Invalid day(s) selected. Only weekdays (Monday-Friday) are allowed.');
+        }
+
+    }else if (plan === 'Premium'){
+        if(Array.isArray(selectedDay) || selectedDay.length !== 4 ) throw new Error('Premium plan users must select exactly four days.');
+
+        if (selectedDay.some(day => !allowedDays.includes(day))) {
+            throw new Error('Invalid day(s) selected. Only weekdays (Monday-Friday) are allowed.');
+        }
+    }
+
+    return true
+}
+
+exports.assignTherapistToClient = async function (User, subscriptionId, planType, subscriptionStatus, therapyType){
 
     const yearsOfExperience = {
 
@@ -211,12 +276,12 @@ exports.assignTherapistToClient = async function (User, planType, subscriptionSt
 
     if(subscriptionStatus === 'subscribed'){
 
-        if(!yearsOfExperience[planType] ) throw new AppError('Plan not found', 400)
+        if(!yearsOfExperience[planType.toLowerCase()] ) throw new AppError('Plan not found', 400)
 
         const {min, max , maxClients} = yearsOfExperience[planType.toLowerCase()]
 
         const eligibleTherapists = await Therapist.find({
-            isActive: true,
+            status: "active",
             yearsOfExperience:  {$gte: min, $lt: max },
             specialization: therapyType,
             currentClients: {$lt: maxClients}
@@ -227,44 +292,15 @@ exports.assignTherapistToClient = async function (User, planType, subscriptionSt
 
         }
 
-        const selectedTherapist = eligibleTherapists[0]
+        return eligibleTherapists[0]
 
-
-        const subscription = new ClientSubscription({
-            userId: User._id,
-            therapistId: selectedTherapist._id,
-            plan: planType,
-            therapyType: therapyType,
-            startDate: new Date(),
-            endDate: calculateSubscriptionEndDate(),
-            status: 'active'
-        });
-
-        // Update therapist's client list
-        await Therapist.findByIdAndUpdate(selectedTherapist._id, {
-            $push: {
-                clientSubscriptions: {
-                    clientId: User._id,
-                    subscriptionStartDate: new Date(),
-                    subscriptionEndDate: subscription.endDate,
-                    status: 'active'
-                }
-            },
-            $inc: { currentClients: 1 }
-        });
-
-        await subscription.save();
-
-        return {
-            therapist: selectedTherapist,
-            subscription: subscription
-        };
 
     }
 
 
     return null
 }
+
 exports.validateInput = (req, res, next)=>{
     const {email, amount} = req.body
     if(!email || typeof email !== 'string'){
@@ -275,32 +311,64 @@ exports.validateInput = (req, res, next)=>{
     }
 }
 
-const createPasswordResetToken = function (Model){
+exports.createPasswordResetToken = function (Model){
+
     const resetToken = crypto.randomBytes(32).toString('hex')
 
     Model.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex')
    Model.passwordResetExpires = Date.now() + 10 * 60 * 1000
 
+    Model.save()
+
     return resetToken
 }
 
-exports.forgotPassword = catchAsync( async (Model, req, res)=>{
-    const {email} = req.body
-   const user = await Model.findOne({email})
-    if(!user){
-        res.status(400).send( 'No user with such email')
-    }
-
-  const resetToken = createPasswordResetToken(user)
-
-    await user.save()
-
-
-})
-
-const calculateSubscriptionEndDate = function (){
+exports.calculateSubscriptionEndDate = function (){
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + 1);
     return endDate;
+}
+
+exports.generateSessionDates = (preferredDays, planType)=> {
+
+    const sessionCount = { basic: 4, premium: 8, standard: 16 }[planType];
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Map day names to numbers (0=Sunday, 1=Monday, etc.)
+    const dayMap = {
+        sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+        thursday: 4, friday: 5, saturday: 6
+    };
+
+    // Convert preferred days to numbers (e.g., ["monday", "wednesday"] → [1, 3])
+    const targetDays = preferredDays.map(day => dayMap[day.trim().toLowerCase()]);
+
+    console.log("Plan Type:", planType, "Session Count:", { basic: 4, premium: 8, standard: 16 }[planType]);
+
+    const sessions = [];
+
+    let date = new Date(now);
+    let sessionsCreated = 0;
+
+    while (sessionsCreated < sessionCount && date.getMonth() === currentMonth) {
+
+        if (targetDays.includes(date.getDay())) {
+
+            const sessionDate = new Date(date);
+
+            // Only add the session if it's in the future (not today or past)
+            if (sessionDate >= now) {
+                sessions.push(sessionDate); // Add to the sessions array
+                sessionsCreated++;          // Increment the counter
+            }
+        }
+
+        // Move to the next day
+        date.setDate(date.getDate() + 1);
+    }
+
+    return sessions;
 }
 
