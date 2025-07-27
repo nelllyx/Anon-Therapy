@@ -355,7 +355,8 @@ exports.generateSessionDates = (preferredDays, planType)=> {
 
 
     let date = new Date(now);
-    date.setDate(date.getDate() + 1);
+
+    //date.setDate(date.getDate() + 1);
 
     let sessionsCreated = 0;
 
