@@ -53,7 +53,9 @@ exports.createSubscriptions = catchAsync(
         const { planName} = req.body
 
    // const normalizedTherapy =  selectedTherapy.toLowerCase()
+
         const userId = req.user.id
+
         const plan = await Plans.findOne({name: planName})
 
         if(!plan)throw new AppError('Plan not found')
@@ -185,14 +187,11 @@ exports.createBooking = catchAsync(
 
         const subscriptionId = Subscription._id
 
+        const existingSession = await SessionPreference.findOne({userId: userId, isSubscriptionActive: true})
+
+        if(existingSession)throw new AppError('You already have an existing session preference', 400)
+
         const {planName, therapyType, selectedDay, preferredTime} = req.body
-
-        req.body.therapyType = therapyType.toLowerCase()
-
-       const normalizedPlanName = planName.toLowerCase()
-
-        console.log(normalizedPlanName)
-
 
         const plan = await Plans.findOne({name: planName})
 
@@ -202,14 +201,15 @@ exports.createBooking = catchAsync(
 
         validateSelectedDay(planName,selectedDay)
 
+        console.log(therapyType)
 
-        await SessionPreference.create({userId , subscriptionId, planId, therapyType, selectedDay, preferredTime});
+        await SessionPreference.create({userId , subscriptionId, planId, therapyType: therapyType.toLowerCase(), selectedDay, preferredTime});
 
         const selectedTherapist =  await assignTherapistToClient(userId, subscriptionId, planName, Subscription.status, therapyType)
 
         if (!selectedTherapist) throw new AppError('No therapist available', 404);
 
-        const sessionDates = generateSessionDates(selectedDay,normalizedPlanName)
+        const sessionDates = generateSessionDates(selectedDay,planName)
 
         console.log("Generated sessionDates:", sessionDates);
 
@@ -218,7 +218,7 @@ exports.createBooking = catchAsync(
                 return await Session.create({
                     userId,
                     therapistId: selectedTherapist._id,
-                    Date: date,
+                    date,
                     startTime: null,
                     endTime: null,
                     subscriptionId,

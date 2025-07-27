@@ -331,10 +331,16 @@ exports.calculateSubscriptionEndDate = function (){
 
 exports.generateSessionDates = (preferredDays, planType)=> {
 
-    const sessionCount = { basic: 4, premium: 8, standard: 16 }[planType];
+    const sessionCount = { Basic: 4, Standard: 8, Premium: 16 }[planType];
+
+    if (!sessionCount) {
+        throw new Error(`Invalid plan type: ${planType}`);
+    }
+
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    now.setHours(0, 0, 0, 0);
+
+    const sessions = [];
 
     // Map day names to numbers (0=Sunday, 1=Monday, etc.)
     const dayMap = {
@@ -345,16 +351,19 @@ exports.generateSessionDates = (preferredDays, planType)=> {
     // Convert preferred days to numbers (e.g., ["monday", "wednesday"] → [1, 3])
     const targetDays = preferredDays.map(day => dayMap[day.trim().toLowerCase()]);
 
-    console.log("Plan Type:", planType, "Session Count:", { basic: 4, premium: 8, standard: 16 }[planType]);
+    console.log("Plan Type:", planType, "Session Count:", { Basic: 4, Premium: 8, Standard: 16 }[planType]);
 
-    const sessions = [];
 
     let date = new Date(now);
+    date.setDate(date.getDate() + 1);
+
     let sessionsCreated = 0;
 
-    while (sessionsCreated < sessionCount && date.getMonth() === currentMonth) {
+    while (sessionsCreated < sessionCount) {
 
-        if (targetDays.includes(date.getDay())) {
+        const day = date.getDay();
+
+        if (targetDays.includes(day)) {
 
             const sessionDate = new Date(date);
 

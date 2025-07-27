@@ -42,6 +42,11 @@ const userSubscriptionSchema = new mongoose.Schema({
         required: true
     },
 
+    isSubscriptionActive: {
+        type: Boolean,
+        default: true
+    }
+
 } ,{ timestamps: true})
 
 userSubscriptionSchema.pre('save', async function(next){
