@@ -331,6 +331,8 @@ exports.calculateSubscriptionEndDate = function (){
 
 exports.generateSessionDates = (preferredDays, planType)=> {
 
+    planType = planType.charAt(0).toUpperCase() + planType.slice(1).toLowerCase();
+
     const sessionCount = { Basic: 4, Standard: 8, Premium: 16 }[planType];
 
     if (!sessionCount) {
@@ -338,9 +340,9 @@ exports.generateSessionDates = (preferredDays, planType)=> {
     }
 
     const now = new Date();
+
     now.setHours(0, 0, 0, 0);
 
-    const sessions = [];
 
     // Map day names to numbers (0=Sunday, 1=Monday, etc.)
     const dayMap = {
@@ -356,9 +358,14 @@ exports.generateSessionDates = (preferredDays, planType)=> {
 
     let date = new Date(now);
 
-    //date.setDate(date.getDate() + 1);
-
     let sessionsCreated = 0;
+
+    const sessions = [];
+
+    // Skip to the next occurrence of any preferred day
+    while (!targetDays.includes(date.getDay())) {
+        date.setDate(date.getDate() + 1);
+    }
 
     while (sessionsCreated < sessionCount) {
 
@@ -369,10 +376,10 @@ exports.generateSessionDates = (preferredDays, planType)=> {
             const sessionDate = new Date(date);
 
             // Only add the session if it's in the future (not today or past)
-            if (sessionDate >= now) {
+                sessionDate.setHours(12, 0, 0, 0);
                 sessions.push(sessionDate); // Add to the sessions array
                 sessionsCreated++;          // Increment the counter
-            }
+
         }
 
         // Move to the next day
