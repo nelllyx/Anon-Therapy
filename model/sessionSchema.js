@@ -31,6 +31,12 @@ const sessionSchema = new mongoose.Schema({
         required: false,
     },
 
+    preferredTime: {
+        type: String,
+        enum: ['Morning', 'Afternoon', 'Evening'],
+        required: true
+    },
+
     startTime: {
         type: String,
         default: null,
@@ -45,7 +51,7 @@ const sessionSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ["scheduled", "completed", "canceled", "no-show", "rescheduled"],
+        enum: ["upcoming", "completed", "canceled", "no-show", "rescheduled"],
         default: "scheduled",
     },
 

@@ -15,6 +15,9 @@ router.post('/payment/initialize', userController.initializePayment);
 router.get('/payment/verify/:reference', userController.confirmPayment);
 router.get('/payment-history', userController.checkPaymentHistory);
 router.get('/subscription/plan', userController.checkActiveSubscription);
+router.get('/sessions', userController.getUpcomingSessions);
+router.get('/dashboard', userController.getDashboard);
+
 
 
 module.exports = router; 

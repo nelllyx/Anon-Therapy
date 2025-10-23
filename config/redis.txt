@@ -1,0 +1,5 @@
+#start a redis container
+docker run --name rediscont -p 6379:6379 -d --rm redis/redis-stack
+
+#Interact with redis
+docker exec -it rediscont redis-cli

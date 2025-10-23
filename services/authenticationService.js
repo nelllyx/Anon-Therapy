@@ -6,49 +6,166 @@ const AppError = require("../exceptions/AppErrors");
 const crypto = require('crypto')
 const userRoles = require('../config/userRoles')
 const {generateResetEmail, generateOtpEmail} = require('../config/nodeMailer')
+const RefreshToken = require("../model/refreshToken");
+const { randomBytes } = require('crypto');
+const bcrypt = require('bcryptjs');
 
 
+const ACCESS_TOKEN_COOKIE_NAME = 'access_token'
+const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token'
 
-exports.signUpToken = (id, role) => {
+const getCookieBaseOptions = () => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict': 'lax',
+    path: '/'
+})
+
+exports.setAuthCookies = (res, accessToken, refreshToken) => {
+
+    const base = getCookieBaseOptions()
+    const accessTtlMs = (process.env.ACCESS_TOKEN_EXPIRES_IN || '15m')
+    const refreshTtlMs = (process.env.REFRESH_TOKEN_EXPIRES_IN || '7d')
+
+    const toMs = (ttl) => {
+        if(typeof ttl === 'number') return ttl
+        if(ttl.endsWith ('ms')) return parseInt(ttl)
+        if(ttl.endsWith ('s')) return parseInt(ttl) * 1000
+        if(ttl.endsWith ('m')) return parseInt(ttl) * 60 * 1000
+        if(ttl.endsWith ('h')) return parseInt(ttl) * 60 * 60 * 1000
+        if(ttl.endsWith ('d')) return parseInt(ttl) * 24 * 60 * 1000
+    }
+
+    res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, {
+        ...base,
+        maxAge: toMs(accessTtlMs)
+    })
+
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+        ...base,
+        maxAge: toMs(refreshTtlMs)
+    })
+
+}
+
+exports.clearAuthCookies = (res) => {
+    const base = getCookieBaseOptions()
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, base)
+    res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, base)
+
+}
+
+const generateRefreshToken = () => {
+    return crypto.randomBytes(64).toString('hex')
+};
+
+const hashToken = async (token) => {
+    return await bcrypt.hash(token, 10);
+};
+
+exports.saveRefreshToken = async (userId, userType, expiresInDays = 7) => {
+
+    const rawToken = generateRefreshToken();
+
+    const hashedToken = await hashToken(rawToken);
+
+    const expiresAt = new Date();
+
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+    const refreshToken = await RefreshToken.create({
+        token: hashedToken,
+        userId,
+        userType,
+        expiresAt,
+    });
+
+    return `${refreshToken._id.toString()}.${rawToken}`
+};
+
+exports.otpVerification = async (otp, Model, userId) => {
+
+    const currentTime = Date.now();
+    const user = await Model.findById(userId);
+
+    if (!user) {
+        throw new AppError('User not found', 404);
+    }
+
+    if (!user.otp || !user.otpCreationTime) {
+        throw new AppError('OTP not generated or already used.', 404);
+    }
+
+    const timeDifference = currentTime - user.otpCreationTime.getTime();
+    const fifteenMinutes = 15 * 60 * 1000;
+
+    if (timeDifference > fifteenMinutes) {
+        user.otp = null;
+        user.otpCreationTime = null;
+        await user.save();
+        throw new AppError('OTP has expired. Please request for a new one.', 400);
+    }
+
+    const realOtp = user.otp;
+    if (realOtp !== otp) {
+        throw new AppError("Invalid OTP", 400);
+    }
+
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpCreationTime = undefined;
+    await user.save();
+
+    // Ensure we have both id and role before generating token
+    if (!user._id || !user.role) {
+        throw new AppError('Invalid user data for token generation', 500);
+    }
+
+}
+
+exports.createAccessToken = (id, role) => {
 
     if (!id || !role) {
         throw new AppError('Invalid token data', 400);
     }
-    
+
     if (!Object.values(userRoles).includes(role)) {
         throw new AppError('Invalid role for token', 400);
     }
 
     return jwt.sign(
-        { 
-            id: id.toString(),
-            role: role 
-        }, 
-        process.env.JWT_SECRET, 
         {
-            expiresIn: process.env.JWT_EXPIRES_IN
+            id: id.toString(),
+            role: role
+        },
+        process.env.REFRESH_TOKEN_SECRET,
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m'
         }
     );
 }
 
-exports.generateUserOtp = async function (Model){
+exports.generateUserOtp = catchAsync (async  (Model) => {
 
-    const otpCreatedAt = Date.now()
+        const otpCreatedAt = Date.now()
 
-    const uniqueDigits = new Set();
+        const uniqueDigits = new Set();
 
-    while (uniqueDigits.size < 6) {
-        // Generate a random byte and take its value modulo 10
-        const randomByte = crypto.randomBytes(1)[0];
-        const digit = randomByte % 10;
-        uniqueDigits.add(digit);
+        while (uniqueDigits.size < 6) {
+            // Generate a random byte and take its value modulo 10
+            const randomByte = crypto.randomBytes(1)[0];
+            const digit = randomByte % 10;
+            uniqueDigits.add(digit);
+        }
 
-    }
+        Model.otp = Array.from(uniqueDigits).join('')
+        Model.otpCreationTime = otpCreatedAt
+        
+        await Model.save()
+        
+        return true
 
-    Model.otp = Array.from(uniqueDigits).join('')
-    Model.otpCreationTime = otpCreatedAt
-   await Model.save()
-}
+})
 
 exports.sendOtpToUserEmail = (email, otp, name) =>{
 
@@ -98,75 +215,6 @@ exports.sendPasswordResetTokenToUserEmail = (resetLink, userName, userEmail) =>{
 
 }
 
-exports.otpVerification = async (otp, Model, userId) => {
-    const currentTime = Date.now();
-    const user = await Model.findById(userId);
-    
-    if (!user) {
-        throw new AppError('User not found', 404);
-    }
-    
-    if (!user.otp || !user.otpCreationTime) {
-        throw new AppError('OTP not generated or already used.', 404);
-    }
-
-    const timeDifference = currentTime - user.otpCreationTime.getTime();
-    const fifteenMinutes = 15 * 60 * 1000;
-    
-    if (timeDifference > fifteenMinutes) {
-        user.otp = null;
-        user.otpCreationTime = null;
-        await user.save();
-        throw new AppError('OTP has expired. Please request for a new one.', 400);
-    }
-
-    const realOtp = user.otp;
-    if (realOtp !== otp) {
-        throw new AppError("Invalid OTP", 400);
-    }
-
-    user.isVerified = true;
-    user.otp = undefined;
-    user.otpCreationTime = undefined;
-    await user.save();
-
-    // Ensure we have both id and role before generating token
-    if (!user._id || !user.role) {
-        throw new AppError('Invalid user data for token generation', 500);
-    }
-
-    // Log the values being passed to signUpToken for debugging
-    // console.log('Token generation data:', {
-    //     id: user._id.toString(),
-    //     role: user.role
-    // });
-
-    return exports.signUpToken(user._id, user.role);
-}
-
-exports.login = catchAsync( async (req, res, Model) =>{
-
-    const {email, password} = req.body
-
-    if(!email || !password)throw new AppError("Email and password required", 400)
-
-    const user = await Model.findOne({email})
-
-
-
-    if(!user)throw new AppError("User not found", 404)
-    if(!user || (! await user.correctPassword(password))) throw  new AppError("Invalid Email or Password", 401)
-    if(user.isVerified === false)throw new AppError("Please complete your email verification", 401)
-
-    const  token = exports.signUpToken(user._id, user.role)
-
-    res.status(200).json({
-        status: 'success',
-        token,
-        user
-    })
-})
-
 exports.getUserByIdAndRole = async (id, role) => {
     let user;
     
@@ -194,36 +242,42 @@ exports.getUserByIdAndRole = async (id, role) => {
 
 exports.protect = catchAsync(async (req, res, next) => {
 
-    let token;
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
-    }
+    const token = req.cookies[ACCESS_TOKEN_COOKIE_NAME];
+
+    // if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    //     token = req.headers.authorization.split(' ')[1];
+    // }
 
     if (!token) {
         throw new AppError('Please login to gain access', 401);
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
         
         if (!decoded.id || !decoded.role) {
              new AppError('Invalid token format', 401);
         }
 
         req.user = await exports.getUserByIdAndRole(decoded.id, decoded.role);
+
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {
             throw new AppError('Invalid token. Please login again', 401);
         }
         if (error.name === 'TokenExpiredError') {
+            res.clearCookie(ACCESS_TOKEN_COOKIE_NAME)
             throw new AppError('Your token has expired. Please login again', 401);
+            //clearAuthCookies(res)
+
         }
         throw error;
     }
 });
 
 exports.restrictTo = (...roles)=>{
+
     return(req, res, next)=>{
         if(!roles.includes(req.user.role)){
         throw new AppError('You do not have permission to perform this action', 403)
@@ -352,9 +406,6 @@ exports.generateSessionDates = (preferredDays, planType)=> {
 
     // Convert preferred days to numbers (e.g., ["monday", "wednesday"] → [1, 3])
     const targetDays = preferredDays.map(day => dayMap[day.trim().toLowerCase()]);
-
-    console.log("Plan Type:", planType, "Session Count:", { Basic: 4, Premium: 8, Standard: 16 }[planType]);
-
 
     let date = new Date(now);
 

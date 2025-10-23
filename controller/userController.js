@@ -4,7 +4,7 @@ const {generateUserOtp, sendOtpToUserEmail, validateSelectedDay, generateSession
     assignTherapistToClient, calculateSubscriptionEndDate} = require('../services/authenticationService')
 const Users = require("../model/userSchema")
 const AppError = require("../exceptions/AppErrors");
-const transport = require('../config/nodeMailer')
+const {transporter} = require('../config/nodeMailer')
 const Plans = require('../model/userPlans')
 const userRoles = require("../config/userRoles");
 const Payment = require('../model/paymentSchema')
@@ -27,13 +27,17 @@ exports.signUp = catchAsync(
 
       await generateUserOtp(newUser)
 
-       await transport.sendMail(sendOtpToUserEmail(email, newUser.otp ,username),(err, info) =>{
+     // const info =  await transport.sendMail(sendOtpToUserEmail(email, newUser.otp ,username),(err, info) =>{
+     //
+     //        if(err){
+     //            return console.error('Error occurred while sending email:', err)
+     //        }
+     //        console.log('Email sent successfully:', info.response)
+     //    })
 
-            if(err){
-                return console.error('Error occurred while sending email:', err)
-            }
-            console.log('Email sent successfully:', info.response)
-        })
+        const info =  await transporter.sendMail(sendOtpToUserEmail(email, newUser.otp ,username))
+
+        console.log('Email sent successfully:', info.response);
 
 
     res.status(201).json({
@@ -51,8 +55,6 @@ exports.createSubscriptions = catchAsync(
     async (req,res)=>{
 
         const { planName} = req.body
-
-   // const normalizedTherapy =  selectedTherapy.toLowerCase()
 
         const userId = req.user.id
 
@@ -89,7 +91,6 @@ exports.createSubscriptions = catchAsync(
                 plan: plan.name,
                 price: plan.price,
                 features: plan.features,
-               // selectedTherapy: newBooking.selectedTherapy,
                 id: newSubscription._id
             }
         })
@@ -191,7 +192,7 @@ exports.createBooking = catchAsync(
 
         if(existingSession)throw new AppError('You already have an existing session preference', 400)
 
-        const {planName, therapyType, selectedDay, preferredTime} = req.body
+        const {planName, therapyType, sessionDays, preferredTime} = req.body
 
         const plan = await Plans.findOne({name: planName})
 
@@ -199,19 +200,15 @@ exports.createBooking = catchAsync(
 
         const planId = plan._id
 
-        validateSelectedDay(planName,selectedDay)
+        validateSelectedDay(planName,sessionDays)
 
-        console.log(therapyType)
-
-        await SessionPreference.create({userId , subscriptionId, planId, therapyType: therapyType.toLowerCase(), selectedDay, preferredTime});
+      const sessionPreference =  await SessionPreference.create({userId , subscriptionId, planId, therapyType: therapyType.toLowerCase(), sessionDays, preferredTime});
 
         const selectedTherapist =  await assignTherapistToClient(userId, subscriptionId, planName, Subscription.status, therapyType)
 
         if (!selectedTherapist) throw new AppError('No therapist available', 404);
 
-        const sessionDates = generateSessionDates(selectedDay,planName)
-
-        console.log("Generated sessionDates:", sessionDates);
+        const sessionDates = generateSessionDates(sessionDays,planName)
 
         const sessions = await Promise.all(
             sessionDates.map(async (date) => {
@@ -219,11 +216,12 @@ exports.createBooking = catchAsync(
                     userId,
                     therapistId: selectedTherapist._id,
                     date,
+                    preferredTime: sessionPreference.preferredTime,
                     startTime: null,
                     endTime: null,
                     subscriptionId,
                     therapyType,
-                    status: 'scheduled',
+                    status: 'upcoming',
                 });
             })
         );
@@ -232,8 +230,6 @@ exports.createBooking = catchAsync(
         // Update therapist's client list
         await Therapist.findByIdAndUpdate(selectedTherapist._id, {$inc: { currentClients: 1 }
         });
-
-       // await session.save();
 
         res.status(200).json({
             success: true,
@@ -273,9 +269,8 @@ exports.checkPaymentHistory = catchAsync(
     }
 )
 
-exports.checkActiveSubscription = catchAsync(
+exports.checkActiveSubscription = catchAsync(async (req,res,next) =>{
 
-    async (req,res,next) =>{
         const userId = req.user.id
 
         const subscription = await Subscriptions.findOne({userId})
@@ -299,3 +294,134 @@ exports.checkActiveSubscription = catchAsync(
     }
 )
 
+exports.getUpcomingSessions = catchAsync(async (req,res,next) => {
+
+    const userId = req.user.id
+
+    const currentDate = Date.now()
+
+    const Sessions = await Session.find({userId: userId, date: {$gt: currentDate} })
+    .sort({ date: 1 })
+    .limit(4)
+    .populate({path: 'therapistId',
+        select: 'firstName lastName profile.avatar',
+    model: 'Therapist'
+    });
+
+    if(!Sessions || Sessions.length < 0)throw new AppError('No upcoming sessions for this user', 404)
+
+
+
+    res.status(200).json({
+        data: {
+            Sessions
+        }
+    })
+
+
+})
+
+exports.getDashboard = catchAsync(async (req, res, next) => {
+    const userId = req.user.id;
+    const currentDate = new Date();
+
+    // Get user profile information
+    const user = await Users.findById(userId).select('-password -otp');
+    
+    if (!user) {
+        throw new AppError('User not found', 404);
+    }
+
+    // // Get active subscription with plan details
+    // const activeSubscription = await Subscriptions.findOne({
+    //     userId: userId,
+    //     isSubscriptionActive: true
+    // }).populate({
+    //     path: 'planId',
+    //     select: 'name price features'
+    // });
+    //
+    // // Get upcoming sessions (next 4)
+    // const upcomingSessions = await Session.find({
+    //     userId: userId,
+    //     date: { $gt: currentDate }
+    // })
+    // .sort({ date: 1 })
+    // .limit(4)
+    // .populate({
+    //     path: 'therapistId',
+    //     select: 'firstName lastName profile.avatar specialization'
+    // });
+    //
+    // // Get completed sessions count
+    // const completedSessionsCount = await Session.countDocuments({
+    //     userId: userId,
+    //     status: 'completed'
+    // });
+    //
+    // // Get total sessions count for current subscription
+    // const totalSessionsCount = await Session.countDocuments({
+    //     userId: userId,
+    //     subscriptionId: activeSubscription?._id
+    // });
+    //
+    // // Get recent payment history (last 3)
+    // const recentPayments = await Payment.find({ userId: userId })
+    //     .sort({ dateOfPayment: -1 })
+    //     .limit(3)
+    //     .select('amount status dateOfPayment');
+    //
+    // // Calculate subscription progress
+    // let subscriptionProgress = null;
+    // if (activeSubscription) {
+    //     const usedSessions = totalSessionsCount;
+    //     const maxSessions = activeSubscription.maxSession;
+    //     subscriptionProgress = {
+    //         used: usedSessions,
+    //         total: maxSessions,
+    //         remaining: maxSessions - usedSessions,
+    //         percentage: Math.round((usedSessions / maxSessions) * 100)
+    //     };
+    // }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                gender: user.gender,
+             },
+            // subscription: activeSubscription ? {
+            //     id: activeSubscription._id,
+            //     plan: activeSubscription.planId,
+            //     status: activeSubscription.status,
+            //     startDate: activeSubscription.startDate,
+            //     endDate: activeSubscription.endDate,
+            //     sessionsPerWeek: activeSubscription.sessionsPerWeek,
+            //     progress: subscriptionProgress
+            // } : null,
+    //         upcomingSessions: upcomingSessions.map(session => ({
+    //             id: session._id,
+    //             date: session.date,
+    //             startTime: session.startTime,
+    //             duration: session.duration,
+    //             therapyType: session.therapyType,
+    //             status: session.status,
+    //             therapist: session.therapistId
+    //         })),
+    //         statistics: {
+    //             completedSessions: completedSessionsCount,
+    //             totalSessions: totalSessionsCount,
+    //             upcomingSessions: upcomingSessions.length
+    //         },
+    //         recentPayments: recentPayments,
+    //         sessionPreference: sessionPreference ? {
+    //             therapyType: sessionPreference.therapyType,
+    //             selectedDay: sessionPreference.selectedDay,
+    //             preferredTime: sessionPreference.preferredTime
+    //         } : null
+         }
+    });
+});

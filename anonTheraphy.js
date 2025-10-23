@@ -1,4 +1,6 @@
 const dotenv = require("dotenv");
+const express = require('express')
+const rateLimit = require('express-rate-limit')
 const connectDB = require('./config/database')
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -14,14 +16,23 @@ const Roles = require("./config/userRoles");
 const auth = require("./services/authenticationService");
 const Users = require("./model/userSchema");
 const Therapist = require("./model/therapistSchema");
+const RefreshToken = require("./model/refreshToken");
 const {CLIENT, THERAPIST} = require("./config/userRoles");
 const {transporter} = require("./config/nodeMailer");
-const {sendPasswordResetTokenToUserEmail, generateUserOtp, sendOtpToUserEmail} = require("./services/authenticationService");
+const {sendPasswordResetTokenToUserEmail, generateUserOtp, sendOtpToUserEmail, createAccessToken} = require("./services/authenticationService");
+const jwt = require("jsonwebtoken");
 const anonTherapy = express()
 
 anonTherapy.use(express.json())
 anonTherapy.use(cookieParser());
 anonTherapy.use(cors({origin: 'http://localhost:5173', credentials: true}))
+
+
+const otpResendLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 3,
+    message: 'Too many OTP resend request from this IP, please try again later'
+})
 
 // Global login route
 anonTherapy.post('/api/v1/login', catchAsync(async (req, res, next) => {
@@ -48,12 +59,15 @@ anonTherapy.post('/api/v1/login', catchAsync(async (req, res, next) => {
             return next(new AppError('Please complete your email verification', 401));
         }
 
-        // Generate token
-        const token = auth.signUpToken(user._id, user.role);
-
-        // Prepare user data based on type
+    // Prepare user data based on type
     const userType = user.role
-        const userData = userType === CLIENT
+
+        const refreshToken = await auth.saveRefreshToken(user._id, userType)
+        const accessToken = auth.createAccessToken(user._id, user.role);
+
+        auth.setAuthCookies(res, accessToken, refreshToken)
+
+    const userData = userType === CLIENT
             ? {
                 id: user._id,
                 username: user.username,
@@ -68,20 +82,10 @@ anonTherapy.post('/api/v1/login', catchAsync(async (req, res, next) => {
                 role: user.role
             };
 
-
-    // res.cookie('auth_token', token, {
-    //     httpOnly: true,
-    //     secure: process.env.NODE_ENV === 'production',
-    //     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    //     maxAge: 3600000,    // 1 hour expiry
-    //     path: '/'
-    // });
-
     res.status(200).json({
         status: 'success',
         data: {
             user: userData,
-            token
         }
     });
 }));
@@ -107,10 +111,15 @@ anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
             if (!user) {
                 return next(new AppError('User not found', 404));
             }
-            const token = await auth.otpVerification(otp, Users, id);
+            await auth.otpVerification(otp, Users, id);
+
+            const refreshToken = await auth.saveRefreshToken(user._id, userType)
+            const accessToken = auth.createAccessToken(user._id, user.role);
+
+            auth.setAuthCookies(res, accessToken, refreshToken)
+
             return res.status(200).json({
                 status: 'success',
-                token,
                 data: {
                     user: {
                         id: user._id,
@@ -126,6 +135,12 @@ anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
                 return next(new AppError('User not found', 404));
             }
             const token = await auth.otpVerification(otp, Therapist, id);
+
+            const refreshToken = await auth.saveRefreshToken(user._id, userType)
+            const accessToken = auth.createAccessToken(user._id, user.role);
+
+            auth.setAuthCookies(res, accessToken, refreshToken)
+
             return res.status(200).json({
                 status: 'success',
                 token,
@@ -146,7 +161,7 @@ anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
 }));
 
 // Global RESEND OTP route
-anonTherapy.post('/api/v1/resend-otp', catchAsync(async (req, res, next) => {
+anonTherapy.post('/api/v1/resend-otp', otpResendLimiter, catchAsync(async (req, res, next) => {
 
     const { email } = req.body;
 
@@ -167,7 +182,9 @@ anonTherapy.post('/api/v1/resend-otp', catchAsync(async (req, res, next) => {
         return next(new AppError('Invalid credentials', 400));
     }
 
-    await generateUserOtp(user)
+    user.otp = await generateUserOtp(user)
+
+    await user.save()
 
     await transporter.sendMail(sendOtpToUserEmail(email, user.otp ,username),(err, info) =>{
 
@@ -187,18 +204,40 @@ anonTherapy.post('/api/v1/resend-otp', catchAsync(async (req, res, next) => {
 
 anonTherapy.post('/api/v1/logout', (req, res) => {
 
-    res.clearCookie('auth_token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-        path: '/'
-    });
+    auth.clearAuthCookies(res)
     
     res.status(200).json({
         status: 'success',
         message: 'Logged out successfully'
     });
 });
+
+anonTherapy.get('/api/v1/validate', (req, res) => {
+
+    const ACCESS_TOKEN_COOKIE_NAME = 'access_token'
+
+    const token = req.cookies[ACCESS_TOKEN_COOKIE_NAME];
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            error: 'No token provided',
+        });
+    }
+
+    try {
+        jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        res.status(200).json({
+            success: true,
+            message: 'Token is valid',
+        });
+    } catch (err) {
+        res.status(401).json({
+            success: false,
+            error: 'Invalid or expired token',
+        });
+    }
+})
 
 anonTherapy.post('/api/v1/forgotPassword', catchAsync (async (req, res, next)=> {
 
@@ -239,6 +278,7 @@ anonTherapy.post('/api/v1/forgotPassword', catchAsync (async (req, res, next)=> 
 
 }))
 
+
 anonTherapy.patch('/api/v1/resetPassword/:token', catchAsync(async (req, res, next) => {
 
     // Get user based on token
@@ -277,6 +317,9 @@ anonTherapy.use('/api/v1/therapist', therapistRoutes)
 
 
 
+
+
+
 anonTherapy.all('*', (req, res, next) => {
     next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
@@ -284,11 +327,20 @@ anonTherapy.all('*', (req, res, next) => {
 
 // Global error handling middleware
 anonTherapy.use((err, req, res, next) => {
-    err.statusCode = err.statusCode || 500;
-    err.status = err.status || 'error';
+    // Ensure we have a valid status code
+    const statusCode = err.statusCode || 500;
+    const status = err.status || 'error';
+
+    // Log the error for debugging
+    console.error('Error details:', {
+        message: err.message,
+        statusCode: statusCode,
+        stack: err.stack
+    });
+
     if (process.env.NODE_ENV === 'development') {
-        res.status(err.statusCode).json({
-            status: err.status,
+        res.status(statusCode).json({
+            status: status,
             error: err,
             message: err.message,
             stack: err.stack
@@ -296,9 +348,9 @@ anonTherapy.use((err, req, res, next) => {
     } else {
         // Production mode
         if (err.isOperational) {
-            res.status(err.statusCode).json({
-                status: err.status,
-                message: err
+            res.status(statusCode).json({
+                status: status,
+                message: err.message
             });
         } else {
             // Programming or unknown errors
@@ -310,6 +362,8 @@ anonTherapy.use((err, req, res, next) => {
         }
     }
 });
+
+
 
 // Connect to database
 connectDB()

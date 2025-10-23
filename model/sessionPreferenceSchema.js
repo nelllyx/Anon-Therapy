@@ -30,7 +30,7 @@ const userSubscriptionSchema = new mongoose.Schema({
         required: true
     },
 
-    selectedDay: {
+    sessionDays: {
         type: [String],
         enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
         required: true
@@ -42,10 +42,6 @@ const userSubscriptionSchema = new mongoose.Schema({
         required: true
     },
 
-    isSubscriptionActive: {
-        type: Boolean,
-        default: true
-    }
 
 } ,{ timestamps: true})
 

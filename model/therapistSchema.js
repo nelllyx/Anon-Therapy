@@ -45,11 +45,6 @@ const therapistSchema = new mongoose.Schema({
       required: true,
     },
 
-    bio: {
-        type: String,
-        default: ''
-    },
-
     specialization: {
         type: String,
         required: [true, 'Your area of specialization is required'],
@@ -62,10 +57,13 @@ const therapistSchema = new mongoose.Schema({
         unique:true
     },
 
-    profilePic: {
-        type: String,
-        default: ''
+    profile: {
+        education: String,
+        certification: String,
+        bio: String,
+        avatar: String,
     },
+
 
     status: {
         type: String,
@@ -107,21 +105,7 @@ const therapistSchema = new mongoose.Schema({
      },
 
     maxClients: Number,
-
-    clientSubscriptions: [{
-        userId: {
-            type:mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        subscriptionStartDate: Date,
-        subscriptionEndDate: Date,
-        status: {
-            type: String,
-            enum: ['active', 'expired']
-        }
-    }]
-
+    
 })
 
 therapistSchema.pre('save',async function (next){

@@ -38,7 +38,6 @@ const userSchema = new mongoose.Schema({
         enum: Object.values(userRoles),
         default:  userRoles.CLIENT,
         required: true,
-
     },
 
     isVerified:{
