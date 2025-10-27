@@ -3,10 +3,12 @@ const express = require('express')
 const rateLimit = require('express-rate-limit')
 const connectDB = require('./config/database')
 const cors = require('cors');
-const cookieParser = require('cookie-parser');
+const socketConnection = require('./services/socket')
+const cookieParser = require('cookie-parser')
 const AppError = require('./exceptions/AppErrors');
 const catchAsync = require('./exceptions/catchAsync')
 dotenv.config({path: './config.env'})
+
 
 const userRoutes = require('./routes/userRoutes')
 const adminRoutes = require('./routes/adminRoutes')
@@ -16,15 +18,15 @@ const Roles = require("./config/userRoles");
 const auth = require("./services/authenticationService");
 const Users = require("./model/userSchema");
 const Therapist = require("./model/therapistSchema");
-const RefreshToken = require("./model/refreshToken");
 const {CLIENT, THERAPIST} = require("./config/userRoles");
 const {transporter} = require("./config/nodeMailer");
-const {sendPasswordResetTokenToUserEmail, generateUserOtp, sendOtpToUserEmail, createAccessToken} = require("./services/authenticationService");
+const {sendPasswordResetTokenToUserEmail, generateUserOtp, sendOtpToUserEmail, protect} = require("./services/authenticationService");
 const jwt = require("jsonwebtoken");
 const anonTherapy = express()
 
 anonTherapy.use(express.json())
 anonTherapy.use(cookieParser());
+
 anonTherapy.use(cors({origin: 'http://localhost:5173', credentials: true}))
 
 
@@ -78,6 +80,7 @@ anonTherapy.post('/api/v1/login', catchAsync(async (req, res, next) => {
                 id: user._id,
                 firstName: user.firstName,
                 lastName: user.lastName,
+
                 email: user.email,
                 role: user.role
             };
@@ -212,6 +215,38 @@ anonTherapy.post('/api/v1/logout', (req, res) => {
     });
 });
 
+anonTherapy.get('/api/v1/auth/token', protect, (req, res) => {
+
+    const ACCESS_TOKEN_COOKIE_NAME = 'access_token'
+
+    const token = req.cookies[ACCESS_TOKEN_COOKIE_NAME];
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            error: 'No token provided',
+        });
+    }
+
+    try {
+        jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        res.status(200).json({
+            success: true,
+            message: 'Token is valid',
+        });
+    } catch (err) {
+        res.status(401).json({
+            success: false,
+            error: 'Invalid or expired token',
+        });
+    }
+
+    res.status(200).json({
+        token: token
+    })
+
+})
+
 anonTherapy.get('/api/v1/validate', (req, res) => {
 
     const ACCESS_TOKEN_COOKIE_NAME = 'access_token'
@@ -277,7 +312,6 @@ anonTherapy.post('/api/v1/forgotPassword', catchAsync (async (req, res, next)=> 
 
 
 }))
-
 
 anonTherapy.patch('/api/v1/resetPassword/:token', catchAsync(async (req, res, next) => {
 
@@ -370,9 +404,13 @@ connectDB()
 
 const port = process.env.PORT || 3001
 
+
+
 // Start server
-anonTherapy.listen(port, () => {
+const server = anonTherapy.listen(port, () => {
     console.log(`App running on port ${port}...`)
 })
+
+socketConnection(server)
 
 
