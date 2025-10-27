@@ -1,16 +1,17 @@
-# Therapist Dummy Data for Testing
+# Therapist Dummy Data for Testing (Nigerian Names)
 
-This directory contains dummy data for populating the therapist schema to aid in testing your Anon-Therapy application.
+This directory contains dummy data for populating the therapist schema to aid in testing your Anon-Therapy application. All therapists now feature authentic Nigerian names and educational backgrounds.
 
 ## Files Created
 
 ### 1. `seedTherapistData.js`
 A comprehensive seed script that includes:
-- 20 diverse therapist profiles with different specializations
+- 20 diverse therapist profiles with authentic Nigerian names
 - Complete schema validation compliance
-- Realistic data including education, certifications, and bios
-- Various experience levels (4-16 years)
+- Realistic data including Nigerian university education, certifications, and bios
+- Various experience levels (1-16 years)
 - Different client loads and capacities
+- Nigerian phone numbers (+234 format)
 - All required fields populated
 
 ### 2. `simpleTherapistData.js`
@@ -77,11 +78,32 @@ All specializations are from the `therapyTypes.js` configuration file:
 
 ### Profile Information
 Each therapist includes:
-- **Personal Info**: Name, email, phone, gender
+- **Personal Info**: Nigerian names, email, Nigerian phone numbers (+234), gender
 - **Professional Info**: Specialization, years of experience, license number
-- **Profile Details**: Education, certifications, bio, avatar path
+- **Profile Details**: Nigerian university education, certifications, culturally relevant bios, avatar path
 - **Status**: Active/inactive, verification status
 - **Client Management**: Current clients (0-5), maximum capacity based on years of experience
+
+### Nigerian Names Included
+The therapists feature authentic Nigerian names from various ethnic groups:
+- **Yoruba Names**: Adebayo, Folake, Tunde, Segun, Kolawole, Adunni, Daniel
+- **Igbo Names**: Chioma, Chukwudi, Amara, Nkemka, Uchechi, Blessing, Joy
+- **Hausa Names**: Ibrahim, Musa
+- **Christian Names**: Emmanuel, Victor, Solomon, Daniel, Faith, Joy, Peace
+
+### Nigerian Universities Featured
+- University of Lagos
+- University of Nigeria, Nsukka
+- Obafemi Awolowo University
+- University of Ibadan
+- Ahmadu Bello University
+- Bayero University Kano
+- University of Port Harcourt
+- Nnamdi Azikiwe University
+- Covenant University
+- University of Benin
+- Lagos State University
+- University of Calabar
 
 ### Max Client Logic
 Based on years of experience and specialization matching therapy types:
@@ -127,7 +149,10 @@ await mongoose.connect('mongodb://localhost:27017/anon-therapy', {
 
 - All passwords are set to "password123" for testing purposes
 - Email addresses are unique and follow a consistent pattern
-- Phone numbers are unique and follow US format
+- Phone numbers are unique and follow Nigerian format (+234)
 - License numbers are sequential and unique
 - Profile avatars point to placeholder image paths
 - All therapists are set to "active" status and verified by default
+- Education backgrounds reflect Nigerian universities
+- Bios include culturally relevant context (e.g., "rooted in Nigerian dietary traditions")
+- Some therapists are multilingual (e.g., "Fluent in Yoruba, Igbo, and English")

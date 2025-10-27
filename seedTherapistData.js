@@ -16,23 +16,23 @@ const connectDB = async () => {
     }
 };
 
-// Dummy therapist data
+// Dummy therapist data with Nigerian names
 const dummyTherapists = [
     {
-        firstName: "Sarah",
-        lastName: "Johnson",
-        email: "sarah.johnson@therapy.com",
+        firstName: "Adebayo",
+        lastName: "Oluwaseun",
+        email: "adebayo.oluwaseun@therapy.com",
         password: "password123",
-        gender: "female",
-        phoneNumber: "+1234567890",
+        gender: "male",
+        phoneNumber: "+2348012345678",
         yearsOfExperience: 3,
         specialization: "nutritional therapy",
         licenseNo: 123456,
         profile: {
-            education: "MS in Nutritional Therapy, Stanford University",
+            education: "MS in Nutritional Therapy, University of Lagos",
             certification: "Licensed Nutritional Therapist (LNT), Certified Nutritional Therapy Practitioner",
-            bio: "Specialized in using nutritional approaches to support mental health and well-being. Passionate about helping clients develop healthy eating habits.",
-            avatar: "uploads/therapists/sarah_johnson.jpg"
+            bio: "Specialized in using nutritional approaches to support mental health and well-being. Passionate about helping clients develop healthy eating habits rooted in Nigerian dietary traditions.",
+            avatar: "uploads/therapists/adebayo_oluwaseun.jpg"
         },
         status: "active",
         isVerified: true,
@@ -40,20 +40,20 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "Michael",
-        lastName: "Chen",
-        email: "michael.chen@therapy.com",
+        firstName: "Chioma",
+        lastName: "Nkemka",
+        email: "chioma.nkemka@therapy.com",
         password: "password123",
-        gender: "male",
-        phoneNumber: "+1234567891",
+        gender: "female",
+        phoneNumber: "+2348012345679",
         yearsOfExperience: 7,
         specialization: "adolescent therapy",
         licenseNo: 123457,
         profile: {
-            education: "MSW, Columbia University School of Social Work",
+            education: "MSW, University of Nigeria, Nsukka",
             certification: "Licensed Clinical Social Worker (LCSW), Adolescent Therapy Specialist",
             bio: "Expert in working with teenagers and young adults. Uses evidence-based approaches to help adolescents navigate challenges and develop coping skills.",
-            avatar: "uploads/therapists/michael_chen.jpg"
+            avatar: "uploads/therapists/chioma_nkemka.jpg"
         },
         status: "active",
         isVerified: true,
@@ -61,20 +61,20 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Emily",
-        lastName: "Rodriguez",
-        email: "emily.rodriguez@therapy.com",
+        firstName: "Folake",
+        lastName: "Adebisi",
+        email: "folake.adebisi@therapy.com",
         password: "password123",
         gender: "female",
-        phoneNumber: "+1234567892",
+        phoneNumber: "+2348012345680",
         yearsOfExperience: 8,
         specialization: "marriage and family therapy",
         licenseNo: 123458,
         profile: {
-            education: "MA in Marriage and Family Therapy, Northwestern University",
+            education: "MA in Marriage and Family Therapy, Obafemi Awolowo University",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
-            bio: "Specializes in family dynamics, couples counseling, and relationship issues. Fluent in Spanish and English.",
-            avatar: "uploads/therapists/emily_rodriguez.jpg"
+            bio: "Specializes in family dynamics, couples counseling, and relationship issues. Fluent in Yoruba, Igbo, and English.",
+            avatar: "uploads/therapists/folake_adebisi.jpg"
         },
         status: "active",
         isVerified: true,
@@ -82,20 +82,20 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "David",
-        lastName: "Thompson",
-        email: "david.thompson@therapy.com",
+        firstName: "Chukwudi",
+        lastName: "Emeka",
+        email: "chukwudi.emeka@therapy.com",
         password: "password123",
         gender: "male",
-        phoneNumber: "+1234567893",
+        phoneNumber: "+2348012345681",
         yearsOfExperience: 12,
         specialization: "cognitive therapy",
         licenseNo: 123459,
         profile: {
-            education: "PhD in Clinical Psychology, University of California",
+            education: "PhD in Clinical Psychology, University of Ibadan",
             certification: "Licensed Clinical Psychologist (LCP), Cognitive Therapy Specialist",
             bio: "Dedicated to helping individuals overcome negative thought patterns and develop healthier cognitive approaches to life challenges.",
-            avatar: "uploads/therapists/david_thompson.jpg"
+            avatar: "uploads/therapists/chukwudi_emeka.jpg"
         },
         status: "active",
         isVerified: true,
@@ -103,20 +103,20 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Lisa",
-        lastName: "Williams",
-        email: "lisa.williams@therapy.com",
+        firstName: "Amara",
+        lastName: "Chidinma",
+        email: "amara.chidinma@therapy.com",
         password: "password123",
         gender: "female",
-        phoneNumber: "+1234567894",
+        phoneNumber: "+2348012345682",
         yearsOfExperience: 4,
         specialization: "adolescent therapy",
         licenseNo: 123460,
         profile: {
-            education: "PsyD in Clinical Psychology, University of Pennsylvania",
+            education: "PsyD in Clinical Psychology, Ahmadu Bello University",
             certification: "Licensed Clinical Psychologist (LCP), Adolescent Therapy Certified",
             bio: "Specializes in working with teenagers dealing with anxiety, depression, and behavioral issues. Uses age-appropriate interventions.",
-            avatar: "uploads/therapists/lisa_williams.jpg"
+            avatar: "uploads/therapists/amara_chidinma.jpg"
         },
         status: "active",
         isVerified: true,
@@ -124,20 +124,20 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "James",
-        lastName: "Anderson",
-        email: "james.anderson@therapy.com",
+        firstName: "Ibrahim",
+        lastName: "Musa",
+        email: "ibrahim.musa@therapy.com",
         password: "password123",
         gender: "male",
-        phoneNumber: "+1234567895",
+        phoneNumber: "+2348012345683",
         yearsOfExperience: 9,
         specialization: "clinical psychology",
         licenseNo: 123461,
         profile: {
-            education: "PhD in Clinical Psychology, University of Texas",
+            education: "PhD in Clinical Psychology, Bayero University Kano",
             certification: "Licensed Clinical Psychologist (LCP), Clinical Psychology Specialist",
             bio: "Compassionate therapist specializing in comprehensive psychological assessment and treatment. Helps clients navigate through various mental health challenges.",
-            avatar: "uploads/therapists/james_anderson.jpg"
+            avatar: "uploads/therapists/ibrahim_musa.jpg"
         },
         status: "active",
         isVerified: true,
@@ -145,20 +145,20 @@ const dummyTherapists = [
         maxClients: 5
     },
     {
-        firstName: "Maria",
-        lastName: "Garcia",
-        email: "maria.garcia@therapy.com",
+        firstName: "Blessing",
+        lastName: "Chioma",
+        email: "blessing.chioma@therapy.com",
         password: "password123",
         gender: "female",
-        phoneNumber: "+1234567896",
+        phoneNumber: "+2348012345684",
         yearsOfExperience: 6,
         specialization: "nutritional therapy",
         licenseNo: 123462,
         profile: {
-            education: "MSW, University of Chicago",
+            education: "MSW, University of Port Harcourt",
             certification: "Licensed Clinical Social Worker (LCSW), Nutritional Therapy Specialist",
             bio: "Specializes in integrating nutritional approaches with traditional therapy to support mental health and overall well-being.",
-            avatar: "uploads/therapists/maria_garcia.jpg"
+            avatar: "uploads/therapists/blessing_chioma.jpg"
         },
         status: "active",
         isVerified: true,
@@ -166,20 +166,20 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Robert",
-        lastName: "Brown",
-        email: "robert.brown@therapy.com",
+        firstName: "Tunde",
+        lastName: "Adeyemi",
+        email: "tunde.adeyemi@therapy.com",
         password: "password123",
         gender: "male",
-        phoneNumber: "+1234567897",
+        phoneNumber: "+2348012345685",
         yearsOfExperience: 11,
         specialization: "marriage and family therapy",
         licenseNo: 123463,
         profile: {
-            education: "PhD in Marriage and Family Therapy, University of Michigan",
+            education: "PhD in Marriage and Family Therapy, University of Lagos",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
             bio: "Expert in family dynamics and relationship issues. Helps families and couples develop healthier communication patterns and resolve conflicts.",
-            avatar: "uploads/therapists/robert_brown.jpg"
+            avatar: "uploads/therapists/tunde_adeyemi.jpg"
         },
         status: "active",
         isVerified: true,
@@ -187,20 +187,20 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Jennifer",
-        lastName: "Davis",
-        email: "jennifer.davis@therapy.com",
+        firstName: "Nkemka",
+        lastName: "Onyinye",
+        email: "nkemka.onyinye@therapy.com",
         password: "password123",
         gender: "female",
-        phoneNumber: "+1234567898",
+        phoneNumber: "+2348012345686",
         yearsOfExperience: 2,
         specialization: "cognitive therapy",
         licenseNo: 123464,
         profile: {
-            education: "MA in Counseling Psychology, University of California",
+            education: "MA in Counseling Psychology, University of Nigeria",
             certification: "Licensed Professional Counselor (LPC), Cognitive Therapy Certified",
             bio: "Integrates cognitive-behavioral approaches to help clients manage stress, anxiety, and develop healthier thinking patterns.",
-            avatar: "uploads/therapists/jennifer_davis.jpg"
+            avatar: "uploads/therapists/nkemka_onyinye.jpg"
         },
         status: "active",
         isVerified: true,
@@ -208,20 +208,20 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "Christopher",
-        lastName: "Wilson",
-        email: "christopher.wilson@therapy.com",
+        firstName: "Emmanuel",
+        lastName: "Godwin",
+        email: "emmanuel.godwin@therapy.com",
         password: "password123",
         gender: "male",
-        phoneNumber: "+1234567899",
+        phoneNumber: "+2348012345687",
         yearsOfExperience: 10,
         specialization: "career and life coaching",
         licenseNo: 123465,
         profile: {
-            education: "PhD in Counseling Psychology, University of Southern California",
+            education: "PhD in Counseling Psychology, Covenant University",
             certification: "Licensed Professional Counselor (LPC), Life Coach Certified",
             bio: "Specializes in career transitions and life coaching using evidence-based approaches. Helps clients achieve personal and professional goals.",
-            avatar: "uploads/therapists/christopher_wilson.jpg"
+            avatar: "uploads/therapists/emmanuel_godwin.jpg"
         },
         status: "active",
         isVerified: true,
@@ -229,20 +229,20 @@ const dummyTherapists = [
         maxClients: 5
     },
     {
-        firstName: "Amanda",
-        lastName: "Taylor",
-        email: "amanda.taylor@therapy.com",
+        firstName: "Peace",
+        lastName: "Amaka",
+        email: "peace.amaka@therapy.com",
         password: "password123",
         gender: "female",
-        phoneNumber: "+1234567800",
+        phoneNumber: "+2348012345688",
         yearsOfExperience: 1,
         specialization: "adolescent therapy",
         licenseNo: 123466,
         profile: {
-            education: "MSW, Boston University",
+            education: "MSW, University of Benin",
             certification: "Licensed Clinical Social Worker (LCSW), Adolescent Therapy Specialist",
             bio: "Focuses on working with teenagers and young adults. Uses evidence-based approaches to help adolescents develop coping skills and resilience.",
-            avatar: "uploads/therapists/amanda_taylor.jpg"
+            avatar: "uploads/therapists/peace_amaka.jpg"
         },
         status: "active",
         isVerified: true,
@@ -250,20 +250,20 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "Kevin",
-        lastName: "Martinez",
-        email: "kevin.martinez@therapy.com",
+        firstName: "Segun",
+        lastName: "Oluwaseun",
+        email: "segun.oluwaseun@therapy.com",
         password: "password123",
         gender: "male",
-        phoneNumber: "+1234567801",
+        phoneNumber: "+2348012345689",
         yearsOfExperience: 8,
         specialization: "nutritional therapy",
         licenseNo: 123467,
         profile: {
-            education: "PhD in Nutritional Psychology, University of Washington",
+            education: "PhD in Nutritional Psychology, University of Ibadan",
             certification: "Licensed Clinical Psychologist (LCP), Nutritional Therapy Specialist",
             bio: "Specializes in the intersection of nutrition and mental health. Uses nutritional approaches to support psychological well-being.",
-            avatar: "uploads/therapists/kevin_martinez.jpg"
+            avatar: "uploads/therapists/segun_oluwaseun.jpg"
         },
         status: "active",
         isVerified: true,
@@ -271,20 +271,146 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Rachel",
-        lastName: "Lee",
-        email: "rachel.lee@therapy.com",
+        firstName: "Uchechi",
+        lastName: "Ifeoma",
+        email: "uchechi.ifeoma@therapy.com",
         password: "password123",
         gender: "female",
-        phoneNumber: "+1234567802",
+        phoneNumber: "+2348012345690",
         yearsOfExperience: 7,
         specialization: "marriage and family therapy",
         licenseNo: 123468,
         profile: {
-            education: "MA in Marriage and Family Therapy, San Francisco State University",
+            education: "MA in Marriage and Family Therapy, Nnamdi Azikiwe University",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
             bio: "Provides comprehensive family and couples therapy. Specializes in relationship issues, communication problems, and family dynamics.",
-            avatar: "uploads/therapists/rachel_lee.jpg"
+            avatar: "uploads/therapists/uchechi_ifeoma.jpg"
+        },
+        status: "active",
+        isVerified: true,
+        currentClients: 4,
+        maxClients: 7
+    },
+    {
+        firstName: "Kolawole",
+        lastName: "Babatunde",
+        email: "kolawole.babatunde@therapy.com",
+        password: "password123",
+        gender: "male",
+        phoneNumber: "+2348012345691",
+        yearsOfExperience: 14,
+        specialization: "career and life coaching",
+        licenseNo: 123469,
+        profile: {
+            education: "PhD in Counseling Psychology, University of Lagos",
+            certification: "Licensed Professional Counselor (LPC), Career Development Facilitator",
+            bio: "Helps clients navigate career transitions, job stress, and workplace issues. Specializes in career assessment and professional development.",
+            avatar: "uploads/therapists/kolawole_babatunde.jpg"
+        },
+        status: "active",
+        isVerified: true,
+        currentClients: 1,
+        maxClients: 5
+    },
+    {
+        firstName: "Adunni",
+        lastName: "Oluwakemi",
+        email: "adunni.oluwakemi@therapy.com",
+        password: "password123",
+        gender: "female",
+        phoneNumber: "+2348012345692",
+        yearsOfExperience: 5,
+        specialization: "cognitive therapy",
+        licenseNo: 123470,
+        profile: {
+            education: "MA in Clinical Psychology, Lagos State University",
+            certification: "Licensed Professional Counselor (LPC), Cognitive Therapy Specialist",
+            bio: "Uses cognitive-behavioral approaches to help clients identify and change negative thought patterns and behaviors.",
+            avatar: "uploads/therapists/adunni_oluwakemi.jpg"
+        },
+        status: "active",
+        isVerified: true,
+        currentClients: 3,
+        maxClients: 7
+    },
+    {
+        firstName: "Victor",
+        lastName: "Onyeka",
+        email: "victor.onyeka@therapy.com",
+        password: "password123",
+        gender: "male",
+        phoneNumber: "+2348012345693",
+        yearsOfExperience: 16,
+        specialization: "clinical psychology",
+        licenseNo: 123471,
+        profile: {
+            education: "PhD in Clinical Psychology, University of Nigeria",
+            certification: "Licensed Clinical Psychologist (LCP), Clinical Psychology Specialist",
+            bio: "Specializes in comprehensive psychological assessment and treatment for various mental health conditions across the lifespan.",
+            avatar: "uploads/therapists/victor_onyeka.jpg"
+        },
+        status: "active",
+        isVerified: true,
+        currentClients: 2,
+        maxClients: 5
+    },
+    {
+        firstName: "Joy",
+        lastName: "Udochukwu",
+        email: "joy.udochukwu@therapy.com",
+        password: "password123",
+        gender: "female",
+        phoneNumber: "+2348012345694",
+        yearsOfExperience: 4,
+        specialization: "adolescent therapy",
+        licenseNo: 123472,
+        profile: {
+            education: "MSW, University of Calabar",
+            certification: "Licensed Clinical Social Worker (LCSW), Adolescent Therapy Specialist",
+            bio: "Specializes in working with teenagers and young adults. Uses evidence-based approaches to help adolescents develop healthy coping strategies.",
+            avatar: "uploads/therapists/joy_udochukwu.jpg"
+        },
+        status: "active",
+        isVerified: true,
+        currentClients: 5,
+        maxClients: 10
+    },
+    {
+        firstName: "Solomon",
+        lastName: "Adebayo",
+        email: "solomon.adebayo@therapy.com",
+        password: "password123",
+        gender: "male",
+        phoneNumber: "+2348012345695",
+        yearsOfExperience: 11,
+        specialization: "career and life coaching",
+        licenseNo: 123473,
+        profile: {
+            education: "PhD in Counseling Psychology, University of Ibadan",
+            certification: "Licensed Professional Counselor (LPC), Life Coach Certified",
+            bio: "Works with individuals to improve life satisfaction, career development, and personal growth. Uses evidence-based coaching approaches.",
+            avatar: "uploads/therapists/solomon_adebayo.jpg"
+        },
+        status: "active",
+        isVerified: true,
+        currentClients: 2,
+        maxClients: 5
+    },
+    {
+        firstName: "Faith",
+        lastName: "Oluwatoyin",
+        email: "faith.oluwatoyin@therapy.com",
+        password: "password123",
+        gender: "female",
+        phoneNumber: "+2348012345696",
+        yearsOfExperience: 6,
+        specialization: "nutritional therapy",
+        licenseNo: 123474,
+        profile: {
+            education: "MA in Nutritional Psychology, University of Lagos",
+            certification: "Licensed Professional Counselor (LPC), Nutritional Therapy Specialist",
+            bio: "Integrates nutritional approaches with traditional therapy to support mental health and overall well-being.",
+            avatar: "uploads/therapists/faith_oluwatoyin.jpg"
         },
         status: "active",
         isVerified: true,
@@ -293,145 +419,19 @@ const dummyTherapists = [
     },
     {
         firstName: "Daniel",
-        lastName: "White",
-        email: "daniel.white@therapy.com",
+        lastName: "Oluwaseyi",
+        email: "daniel.oluwaseyi@therapy.com",
         password: "password123",
         gender: "male",
-        phoneNumber: "+1234567803",
-        yearsOfExperience: 14,
-        specialization: "career and life coaching",
-        licenseNo: 123469,
-        profile: {
-            education: "PhD in Counseling Psychology, University of Illinois",
-            certification: "Licensed Professional Counselor (LPC), Career Development Facilitator",
-            bio: "Helps clients navigate career transitions, job stress, and workplace issues. Specializes in career assessment and professional development.",
-            avatar: "uploads/therapists/daniel_white.jpg"
-        },
-        status: "active",
-        isVerified: true,
-        currentClients: 1,
-        maxClients: 5
-    },
-    {
-        firstName: "Stephanie",
-        lastName: "Clark",
-        email: "stephanie.clark@therapy.com",
-        password: "password123",
-        gender: "female",
-        phoneNumber: "+1234567804",
-        yearsOfExperience: 5,
-        specialization: "cognitive therapy",
-        licenseNo: 123470,
-        profile: {
-            education: "MA in Clinical Psychology, Pratt Institute",
-            certification: "Licensed Professional Counselor (LPC), Cognitive Therapy Specialist",
-            bio: "Uses cognitive-behavioral approaches to help clients identify and change negative thought patterns and behaviors.",
-            avatar: "uploads/therapists/stephanie_clark.jpg"
-        },
-        status: "active",
-        isVerified: true,
-        currentClients: 3,
-        maxClients: 7
-    },
-    {
-        firstName: "Mark",
-        lastName: "Lewis",
-        email: "mark.lewis@therapy.com",
-        password: "password123",
-        gender: "male",
-        phoneNumber: "+1234567805",
-        yearsOfExperience: 16,
-        specialization: "clinical psychology",
-        licenseNo: 123471,
-        profile: {
-            education: "PhD in Clinical Psychology, University of North Carolina",
-            certification: "Licensed Clinical Psychologist (LCP), Clinical Psychology Specialist",
-            bio: "Specializes in comprehensive psychological assessment and treatment for various mental health conditions across the lifespan.",
-            avatar: "uploads/therapists/mark_lewis.jpg"
-        },
-        status: "active",
-        isVerified: true,
-        currentClients: 2,
-        maxClients: 5
-    },
-    {
-        firstName: "Nicole",
-        lastName: "Hall",
-        email: "nicole.hall@therapy.com",
-        password: "password123",
-        gender: "female",
-        phoneNumber: "+1234567806",
-        yearsOfExperience: 4,
-        specialization: "adolescent therapy",
-        licenseNo: 123472,
-        profile: {
-            education: "MSW, University of Maryland",
-            certification: "Licensed Clinical Social Worker (LCSW), Adolescent Therapy Specialist",
-            bio: "Specializes in working with teenagers and young adults. Uses evidence-based approaches to help adolescents develop healthy coping strategies.",
-            avatar: "uploads/therapists/nicole_hall.jpg"
-        },
-        status: "active",
-        isVerified: true,
-        currentClients: 5,
-        maxClients: 10
-    },
-    {
-        firstName: "Thomas",
-        lastName: "Young",
-        email: "thomas.young@therapy.com",
-        password: "password123",
-        gender: "male",
-        phoneNumber: "+1234567807",
-        yearsOfExperience: 11,
-        specialization: "career and life coaching",
-        licenseNo: 123473,
-        profile: {
-            education: "PhD in Counseling Psychology, University of Florida",
-            certification: "Licensed Professional Counselor (LPC), Life Coach Certified",
-            bio: "Works with individuals to improve life satisfaction, career development, and personal growth. Uses evidence-based coaching approaches.",
-            avatar: "uploads/therapists/thomas_young.jpg"
-        },
-        status: "active",
-        isVerified: true,
-        currentClients: 2,
-        maxClients: 5
-    },
-    {
-        firstName: "Jessica",
-        lastName: "King",
-        email: "jessica.king@therapy.com",
-        password: "password123",
-        gender: "female",
-        phoneNumber: "+1234567808",
-        yearsOfExperience: 6,
-        specialization: "nutritional therapy",
-        licenseNo: 123474,
-        profile: {
-            education: "MA in Nutritional Psychology, University of California",
-            certification: "Licensed Professional Counselor (LPC), Nutritional Therapy Specialist",
-            bio: "Integrates nutritional approaches with traditional therapy to support mental health and overall well-being.",
-            avatar: "uploads/therapists/jessica_king.jpg"
-        },
-        status: "active",
-        isVerified: true,
-        currentClients: 4,
-        maxClients: 7
-    },
-    {
-        firstName: "Andrew",
-        lastName: "Wright",
-        email: "andrew.wright@therapy.com",
-        password: "password123",
-        gender: "male",
-        phoneNumber: "+1234567809",
+        phoneNumber: "+2348012345697",
         yearsOfExperience: 12,
         specialization: "marriage and family therapy",
         licenseNo: 123475,
         profile: {
-            education: "PhD in Marriage and Family Therapy, University of Wisconsin",
+            education: "PhD in Marriage and Family Therapy, Obafemi Awolowo University",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
             bio: "Facilitates family and couples therapy sessions. Specializes in relationship issues, communication problems, and family dynamics.",
-            avatar: "uploads/therapists/andrew_wright.jpg"
+            avatar: "uploads/therapists/daniel_oluwaseyi.jpg"
         },
         status: "active",
         isVerified: true,
