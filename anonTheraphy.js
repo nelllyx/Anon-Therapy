@@ -215,37 +215,37 @@ anonTherapy.post('/api/v1/logout', (req, res) => {
     });
 });
 
-anonTherapy.get('/api/v1/auth/token', protect, (req, res) => {
-
-    const ACCESS_TOKEN_COOKIE_NAME = 'access_token'
-
-    const token = req.cookies[ACCESS_TOKEN_COOKIE_NAME];
-
-    if (!token) {
-        return res.status(401).json({
-            success: false,
-            error: 'No token provided',
-        });
-    }
-
-    try {
-        jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-        res.status(200).json({
-            success: true,
-            message: 'Token is valid',
-        });
-    } catch (err) {
-        res.status(401).json({
-            success: false,
-            error: 'Invalid or expired token',
-        });
-    }
-
-    res.status(200).json({
-        token: token
-    })
-
-})
+// anonTherapy.get('/api/v1/auth/token', protect, (req, res) => {
+//
+//     const ACCESS_TOKEN_COOKIE_NAME = 'access_token'
+//
+//     const token = req.cookies[ACCESS_TOKEN_COOKIE_NAME];
+//
+//     if (!token) {
+//         return res.status(401).json({
+//             success: false,
+//             error: 'No token provided',
+//         });
+//     }
+//
+//     try {
+//         jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+//         res.status(200).json({
+//             success: true,
+//             message: 'Token is valid',
+//         });
+//     } catch (err) {
+//         res.status(401).json({
+//             success: false,
+//             error: 'Invalid or expired token',
+//         });
+//     }
+//
+//     res.status(200).json({
+//         token: token
+//     })
+//
+// })
 
 anonTherapy.get('/api/v1/validate', (req, res) => {
 
