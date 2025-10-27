@@ -1,4 +1,3 @@
-
 const therapyTypesConfig = {
     Basic: ['nutritional therapy','adolescent therapy'],
     Standard: ['marriage and family therapy','nutritional therapy','cognitive therapy', 'adolescent therapy'],

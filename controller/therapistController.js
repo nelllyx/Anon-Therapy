@@ -127,6 +127,9 @@ exports.getSessionsForTheWeek = catchAsync( async (req, res, next) => {
     const therapistId = req.user.id
 
     const currentDate = new Date();
+    const sevenDaysFromNow = new Date(currentDate);
+    sevenDaysFromNow.setDate(currentDate.getDate() + 7);
+
 
     const allSessions = await Session.find({therapistId: therapistId })
         .sort({ date: 1 })
@@ -145,7 +148,10 @@ exports.getSessionsForTheWeek = catchAsync( async (req, res, next) => {
 
     // Categorize sessions
     const upcomingSessions = allSessions.filter(
-        session => new Date(session.date) > currentDate
+        session => {
+          const sessionDate =  new Date(session.date)
+            return sessionDate > currentDate && sessionDate <= sevenDaysFromNow
+        }
     );
 
     const pastSessions = allSessions.filter(
@@ -156,7 +162,7 @@ exports.getSessionsForTheWeek = catchAsync( async (req, res, next) => {
         session => session.status === 'completed'
     );
 
-    const rescheduledSessions = pastSessions.filter(
+    const rescheduledSessions = allSessions.filter(
         session => session.status === 'rescheduled'
     );
 
@@ -192,6 +198,8 @@ exports.assignTimeForSession = catchAsync( async (req, res, next) => {
     )
 
     if(!validSession)  return next(new AppError("Session not found", 400))
+
+    console.log(validSession)
 
     res.status(200).json({
         status: 'success',

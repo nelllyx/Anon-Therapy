@@ -12,7 +12,7 @@ app.post('/registration', therapistController.register)
 app.use(protect, restrictTo('therapist'));
 
 app.patch('/update-profile', therapistController.updateProfile)
-app.patch('/sessions/:sessionId', therapistController.updateProfile)
+app.patch('/sessions/:sessionId', therapistController.assignTimeForSession)
 app.get('/dashboard', therapistController.getDashboard)
 app.get('/sessions/week', therapistController.getSessionsForTheWeek)
 
