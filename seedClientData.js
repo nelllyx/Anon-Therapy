@@ -6,7 +6,7 @@ const Subscriptions = require('./model/Subscriptions');
 // Connect to MongoDB (adjust connection string as needed)
 const connectDB = async () => {
     try {
-        await mongoose.connect('mongodb://localhost:27017/anon-therapy', {
+        await mongoose.connect('mongodb://localhost:27017/anonymous_therapy', {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
