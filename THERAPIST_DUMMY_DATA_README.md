@@ -85,11 +85,11 @@ Each therapist includes:
 - **Client Management**: Current clients (0-5), maximum capacity based on years of experience
 
 ### Nigerian Names Included
-The therapists feature authentic Nigerian names from various ethnic groups:
-- **Yoruba Names**: Adebayo, Folake, Tunde, Segun, Kolawole, Adunni, Daniel
-- **Igbo Names**: Chioma, Chukwudi, Amara, Nkemka, Uchechi, Blessing, Joy
-- **Hausa Names**: Ibrahim, Musa
-- **Christian Names**: Emmanuel, Victor, Solomon, Daniel, Faith, Joy, Peace
+The therapists feature authentic Nigerian names from various ethnic groups (completely different from client names):
+- **Yoruba Names**: Olumide, Bukola, Babatunde, Kunle, Femi, Samuel, Peter
+- **Igbo Names**: Ifeoma, Obinna, Ngozi, Chinwe, Adaora, Patience, Mercy
+- **Hausa Names**: Yusuf, Zainab
+- **Christian Names**: Gabriel, Grace, Joshua, Samuel, Peter, Patience, Mercy
 
 ### Nigerian Universities Featured
 - University of Lagos

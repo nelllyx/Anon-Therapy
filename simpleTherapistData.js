@@ -3,9 +3,9 @@
 
 const simpleTherapistData = [
     {
-        firstName: "Adebayo",
-        lastName: "Oluwaseun",
-        email: "adebayo.oluwaseun@therapy.com",
+        firstName: "Olumide",
+        lastName: "Adebayo",
+        email: "olumide.adebayo@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345678",
@@ -16,7 +16,7 @@ const simpleTherapistData = [
             education: "MS in Nutritional Therapy, University of Lagos",
             certification: "Licensed Nutritional Therapist (LNT), Certified Nutritional Therapy Practitioner",
             bio: "Specialized in using nutritional approaches to support mental health and well-being rooted in Nigerian dietary traditions.",
-            avatar: "uploads/therapists/adebayo_oluwaseun.jpg"
+            avatar: "uploads/therapists/olumide_adebayo.jpg"
         },
         status: "active",
         isVerified: true,
@@ -24,9 +24,9 @@ const simpleTherapistData = [
         maxClients: 10
     },
     {
-        firstName: "Chioma",
-        lastName: "Nkemka",
-        email: "chioma.nkemka@therapy.com",
+        firstName: "Ifeoma",
+        lastName: "Nwosu",
+        email: "ifeoma.nwosu@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345679",
@@ -37,7 +37,7 @@ const simpleTherapistData = [
             education: "MSW, University of Nigeria, Nsukka",
             certification: "Licensed Clinical Social Worker (LCSW), Adolescent Therapy Specialist",
             bio: "Expert in working with teenagers and young adults using evidence-based approaches.",
-            avatar: "uploads/therapists/chioma_nkemka.jpg"
+            avatar: "uploads/therapists/ifeoma_nwosu.jpg"
         },
         status: "active",
         isVerified: true,
@@ -45,9 +45,9 @@ const simpleTherapistData = [
         maxClients: 7
     },
     {
-        firstName: "Folake",
-        lastName: "Adebisi",
-        email: "folake.adebisi@therapy.com",
+        firstName: "Bukola",
+        lastName: "Adeleke",
+        email: "bukola.adeleke@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345680",
@@ -58,7 +58,7 @@ const simpleTherapistData = [
             education: "MA in Marriage and Family Therapy, Obafemi Awolowo University",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
             bio: "Specializes in family dynamics, couples counseling, and relationship issues. Fluent in Yoruba, Igbo, and English.",
-            avatar: "uploads/therapists/folake_adebisi.jpg"
+            avatar: "uploads/therapists/bukola_adeleke.jpg"
         },
         status: "active",
         isVerified: true,

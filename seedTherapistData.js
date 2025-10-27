@@ -16,12 +16,12 @@ const connectDB = async () => {
     }
 };
 
-// Dummy therapist data with Nigerian names
+// Dummy therapist data with Nigerian names (different from client names)
 const dummyTherapists = [
     {
-        firstName: "Adebayo",
-        lastName: "Oluwaseun",
-        email: "adebayo.oluwaseun@therapy.com",
+        firstName: "Olumide",
+        lastName: "Adebayo",
+        email: "olumide.adebayo@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345678",
@@ -32,7 +32,7 @@ const dummyTherapists = [
             education: "MS in Nutritional Therapy, University of Lagos",
             certification: "Licensed Nutritional Therapist (LNT), Certified Nutritional Therapy Practitioner",
             bio: "Specialized in using nutritional approaches to support mental health and well-being. Passionate about helping clients develop healthy eating habits rooted in Nigerian dietary traditions.",
-            avatar: "uploads/therapists/adebayo_oluwaseun.jpg"
+            avatar: "uploads/therapists/olumide_adebayo.jpg"
         },
         status: "active",
         isVerified: true,
@@ -40,9 +40,9 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "Chioma",
-        lastName: "Nkemka",
-        email: "chioma.nkemka@therapy.com",
+        firstName: "Ifeoma",
+        lastName: "Nwosu",
+        email: "ifeoma.nwosu@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345679",
@@ -53,7 +53,7 @@ const dummyTherapists = [
             education: "MSW, University of Nigeria, Nsukka",
             certification: "Licensed Clinical Social Worker (LCSW), Adolescent Therapy Specialist",
             bio: "Expert in working with teenagers and young adults. Uses evidence-based approaches to help adolescents navigate challenges and develop coping skills.",
-            avatar: "uploads/therapists/chioma_nkemka.jpg"
+            avatar: "uploads/therapists/ifeoma_nwosu.jpg"
         },
         status: "active",
         isVerified: true,
@@ -61,9 +61,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Folake",
-        lastName: "Adebisi",
-        email: "folake.adebisi@therapy.com",
+        firstName: "Bukola",
+        lastName: "Adeleke",
+        email: "bukola.adeleke@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345680",
@@ -74,7 +74,7 @@ const dummyTherapists = [
             education: "MA in Marriage and Family Therapy, Obafemi Awolowo University",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
             bio: "Specializes in family dynamics, couples counseling, and relationship issues. Fluent in Yoruba, Igbo, and English.",
-            avatar: "uploads/therapists/folake_adebisi.jpg"
+            avatar: "uploads/therapists/bukola_adeleke.jpg"
         },
         status: "active",
         isVerified: true,
@@ -82,9 +82,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Chukwudi",
-        lastName: "Emeka",
-        email: "chukwudi.emeka@therapy.com",
+        firstName: "Obinna",
+        lastName: "Okonkwo",
+        email: "obinna.okonkwo@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345681",
@@ -95,7 +95,7 @@ const dummyTherapists = [
             education: "PhD in Clinical Psychology, University of Ibadan",
             certification: "Licensed Clinical Psychologist (LCP), Cognitive Therapy Specialist",
             bio: "Dedicated to helping individuals overcome negative thought patterns and develop healthier cognitive approaches to life challenges.",
-            avatar: "uploads/therapists/chukwudi_emeka.jpg"
+            avatar: "uploads/therapists/obinna_okonkwo.jpg"
         },
         status: "active",
         isVerified: true,
@@ -103,9 +103,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Amara",
-        lastName: "Chidinma",
-        email: "amara.chidinma@therapy.com",
+        firstName: "Adunni",
+        lastName: "Oluwakemi",
+        email: "adunni.oluwakemi@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345682",
@@ -116,7 +116,7 @@ const dummyTherapists = [
             education: "PsyD in Clinical Psychology, Ahmadu Bello University",
             certification: "Licensed Clinical Psychologist (LCP), Adolescent Therapy Certified",
             bio: "Specializes in working with teenagers dealing with anxiety, depression, and behavioral issues. Uses age-appropriate interventions.",
-            avatar: "uploads/therapists/amara_chidinma.jpg"
+            avatar: "uploads/therapists/adunni_oluwakemi.jpg"
         },
         status: "active",
         isVerified: true,
@@ -124,9 +124,9 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "Ibrahim",
-        lastName: "Musa",
-        email: "ibrahim.musa@therapy.com",
+        firstName: "Yusuf",
+        lastName: "Abdullahi",
+        email: "yusuf.abdullahi@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345683",
@@ -137,7 +137,7 @@ const dummyTherapists = [
             education: "PhD in Clinical Psychology, Bayero University Kano",
             certification: "Licensed Clinical Psychologist (LCP), Clinical Psychology Specialist",
             bio: "Compassionate therapist specializing in comprehensive psychological assessment and treatment. Helps clients navigate through various mental health challenges.",
-            avatar: "uploads/therapists/ibrahim_musa.jpg"
+            avatar: "uploads/therapists/yusuf_abdullahi.jpg"
         },
         status: "active",
         isVerified: true,
@@ -145,9 +145,9 @@ const dummyTherapists = [
         maxClients: 5
     },
     {
-        firstName: "Blessing",
-        lastName: "Chioma",
-        email: "blessing.chioma@therapy.com",
+        firstName: "Ngozi",
+        lastName: "Eze",
+        email: "ngozi.eze@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345684",
@@ -158,7 +158,7 @@ const dummyTherapists = [
             education: "MSW, University of Port Harcourt",
             certification: "Licensed Clinical Social Worker (LCSW), Nutritional Therapy Specialist",
             bio: "Specializes in integrating nutritional approaches with traditional therapy to support mental health and overall well-being.",
-            avatar: "uploads/therapists/blessing_chioma.jpg"
+            avatar: "uploads/therapists/ngozi_eze.jpg"
         },
         status: "active",
         isVerified: true,
@@ -166,9 +166,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Tunde",
-        lastName: "Adeyemi",
-        email: "tunde.adeyemi@therapy.com",
+        firstName: "Babatunde",
+        lastName: "Ogunleye",
+        email: "babatunde.ogunleye@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345685",
@@ -179,7 +179,7 @@ const dummyTherapists = [
             education: "PhD in Marriage and Family Therapy, University of Lagos",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
             bio: "Expert in family dynamics and relationship issues. Helps families and couples develop healthier communication patterns and resolve conflicts.",
-            avatar: "uploads/therapists/tunde_adeyemi.jpg"
+            avatar: "uploads/therapists/babatunde_ogunleye.jpg"
         },
         status: "active",
         isVerified: true,
@@ -187,9 +187,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Nkemka",
-        lastName: "Onyinye",
-        email: "nkemka.onyinye@therapy.com",
+        firstName: "Chinwe",
+        lastName: "Okafor",
+        email: "chinwe.okafor@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345686",
@@ -200,7 +200,7 @@ const dummyTherapists = [
             education: "MA in Counseling Psychology, University of Nigeria",
             certification: "Licensed Professional Counselor (LPC), Cognitive Therapy Certified",
             bio: "Integrates cognitive-behavioral approaches to help clients manage stress, anxiety, and develop healthier thinking patterns.",
-            avatar: "uploads/therapists/nkemka_onyinye.jpg"
+            avatar: "uploads/therapists/chinwe_okafor.jpg"
         },
         status: "active",
         isVerified: true,
@@ -208,9 +208,9 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "Emmanuel",
-        lastName: "Godwin",
-        email: "emmanuel.godwin@therapy.com",
+        firstName: "Gabriel",
+        lastName: "Okafor",
+        email: "gabriel.okafor@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345687",
@@ -221,7 +221,7 @@ const dummyTherapists = [
             education: "PhD in Counseling Psychology, Covenant University",
             certification: "Licensed Professional Counselor (LPC), Life Coach Certified",
             bio: "Specializes in career transitions and life coaching using evidence-based approaches. Helps clients achieve personal and professional goals.",
-            avatar: "uploads/therapists/emmanuel_godwin.jpg"
+            avatar: "uploads/therapists/gabriel_okafor.jpg"
         },
         status: "active",
         isVerified: true,
@@ -229,9 +229,9 @@ const dummyTherapists = [
         maxClients: 5
     },
     {
-        firstName: "Peace",
-        lastName: "Amaka",
-        email: "peace.amaka@therapy.com",
+        firstName: "Grace",
+        lastName: "Okonkwo",
+        email: "grace.okonkwo@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345688",
@@ -242,7 +242,7 @@ const dummyTherapists = [
             education: "MSW, University of Benin",
             certification: "Licensed Clinical Social Worker (LCSW), Adolescent Therapy Specialist",
             bio: "Focuses on working with teenagers and young adults. Uses evidence-based approaches to help adolescents develop coping skills and resilience.",
-            avatar: "uploads/therapists/peace_amaka.jpg"
+            avatar: "uploads/therapists/grace_okonkwo.jpg"
         },
         status: "active",
         isVerified: true,
@@ -250,9 +250,9 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "Segun",
-        lastName: "Oluwaseun",
-        email: "segun.oluwaseun@therapy.com",
+        firstName: "Kunle",
+        lastName: "Adeyemi",
+        email: "kunle.adeyemi@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345689",
@@ -263,7 +263,7 @@ const dummyTherapists = [
             education: "PhD in Nutritional Psychology, University of Ibadan",
             certification: "Licensed Clinical Psychologist (LCP), Nutritional Therapy Specialist",
             bio: "Specializes in the intersection of nutrition and mental health. Uses nutritional approaches to support psychological well-being.",
-            avatar: "uploads/therapists/segun_oluwaseun.jpg"
+            avatar: "uploads/therapists/kunle_adeyemi.jpg"
         },
         status: "active",
         isVerified: true,
@@ -271,9 +271,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Uchechi",
-        lastName: "Ifeoma",
-        email: "uchechi.ifeoma@therapy.com",
+        firstName: "Adaora",
+        lastName: "Nwankwo",
+        email: "adaora.nwankwo@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345690",
@@ -284,7 +284,7 @@ const dummyTherapists = [
             education: "MA in Marriage and Family Therapy, Nnamdi Azikiwe University",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
             bio: "Provides comprehensive family and couples therapy. Specializes in relationship issues, communication problems, and family dynamics.",
-            avatar: "uploads/therapists/uchechi_ifeoma.jpg"
+            avatar: "uploads/therapists/adaora_nwankwo.jpg"
         },
         status: "active",
         isVerified: true,
@@ -292,9 +292,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Kolawole",
-        lastName: "Babatunde",
-        email: "kolawole.babatunde@therapy.com",
+        firstName: "Femi",
+        lastName: "Akinwunmi",
+        email: "femi.akinwunmi@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345691",
@@ -305,7 +305,7 @@ const dummyTherapists = [
             education: "PhD in Counseling Psychology, University of Lagos",
             certification: "Licensed Professional Counselor (LPC), Career Development Facilitator",
             bio: "Helps clients navigate career transitions, job stress, and workplace issues. Specializes in career assessment and professional development.",
-            avatar: "uploads/therapists/kolawole_babatunde.jpg"
+            avatar: "uploads/therapists/femi_akinwunmi.jpg"
         },
         status: "active",
         isVerified: true,
@@ -313,9 +313,9 @@ const dummyTherapists = [
         maxClients: 5
     },
     {
-        firstName: "Adunni",
-        lastName: "Oluwakemi",
-        email: "adunni.oluwakemi@therapy.com",
+        firstName: "Zainab",
+        lastName: "Mohammed",
+        email: "zainab.mohammed@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345692",
@@ -326,7 +326,7 @@ const dummyTherapists = [
             education: "MA in Clinical Psychology, Lagos State University",
             certification: "Licensed Professional Counselor (LPC), Cognitive Therapy Specialist",
             bio: "Uses cognitive-behavioral approaches to help clients identify and change negative thought patterns and behaviors.",
-            avatar: "uploads/therapists/adunni_oluwakemi.jpg"
+            avatar: "uploads/therapists/zainab_mohammed.jpg"
         },
         status: "active",
         isVerified: true,
@@ -334,9 +334,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Victor",
-        lastName: "Onyeka",
-        email: "victor.onyeka@therapy.com",
+        firstName: "Samuel",
+        lastName: "Adebayo",
+        email: "samuel.adebayo@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345693",
@@ -347,7 +347,7 @@ const dummyTherapists = [
             education: "PhD in Clinical Psychology, University of Nigeria",
             certification: "Licensed Clinical Psychologist (LCP), Clinical Psychology Specialist",
             bio: "Specializes in comprehensive psychological assessment and treatment for various mental health conditions across the lifespan.",
-            avatar: "uploads/therapists/victor_onyeka.jpg"
+            avatar: "uploads/therapists/samuel_adebayo.jpg"
         },
         status: "active",
         isVerified: true,
@@ -355,9 +355,9 @@ const dummyTherapists = [
         maxClients: 5
     },
     {
-        firstName: "Joy",
-        lastName: "Udochukwu",
-        email: "joy.udochukwu@therapy.com",
+        firstName: "Patience",
+        lastName: "Nwosu",
+        email: "patience.nwosu@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345694",
@@ -368,7 +368,7 @@ const dummyTherapists = [
             education: "MSW, University of Calabar",
             certification: "Licensed Clinical Social Worker (LCSW), Adolescent Therapy Specialist",
             bio: "Specializes in working with teenagers and young adults. Uses evidence-based approaches to help adolescents develop healthy coping strategies.",
-            avatar: "uploads/therapists/joy_udochukwu.jpg"
+            avatar: "uploads/therapists/patience_nwosu.jpg"
         },
         status: "active",
         isVerified: true,
@@ -376,9 +376,9 @@ const dummyTherapists = [
         maxClients: 10
     },
     {
-        firstName: "Solomon",
-        lastName: "Adebayo",
-        email: "solomon.adebayo@therapy.com",
+        firstName: "Joshua",
+        lastName: "Okafor",
+        email: "joshua.okafor@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345695",
@@ -389,7 +389,7 @@ const dummyTherapists = [
             education: "PhD in Counseling Psychology, University of Ibadan",
             certification: "Licensed Professional Counselor (LPC), Life Coach Certified",
             bio: "Works with individuals to improve life satisfaction, career development, and personal growth. Uses evidence-based coaching approaches.",
-            avatar: "uploads/therapists/solomon_adebayo.jpg"
+            avatar: "uploads/therapists/joshua_okafor.jpg"
         },
         status: "active",
         isVerified: true,
@@ -397,9 +397,9 @@ const dummyTherapists = [
         maxClients: 5
     },
     {
-        firstName: "Faith",
-        lastName: "Oluwatoyin",
-        email: "faith.oluwatoyin@therapy.com",
+        firstName: "Mercy",
+        lastName: "Eze",
+        email: "mercy.eze@therapy.com",
         password: "password123",
         gender: "female",
         phoneNumber: "+2348012345696",
@@ -410,7 +410,7 @@ const dummyTherapists = [
             education: "MA in Nutritional Psychology, University of Lagos",
             certification: "Licensed Professional Counselor (LPC), Nutritional Therapy Specialist",
             bio: "Integrates nutritional approaches with traditional therapy to support mental health and overall well-being.",
-            avatar: "uploads/therapists/faith_oluwatoyin.jpg"
+            avatar: "uploads/therapists/mercy_eze.jpg"
         },
         status: "active",
         isVerified: true,
@@ -418,9 +418,9 @@ const dummyTherapists = [
         maxClients: 7
     },
     {
-        firstName: "Daniel",
-        lastName: "Oluwaseyi",
-        email: "daniel.oluwaseyi@therapy.com",
+        firstName: "Peter",
+        lastName: "Adebayo",
+        email: "peter.adebayo@therapy.com",
         password: "password123",
         gender: "male",
         phoneNumber: "+2348012345697",
@@ -431,7 +431,7 @@ const dummyTherapists = [
             education: "PhD in Marriage and Family Therapy, Obafemi Awolowo University",
             certification: "Licensed Marriage and Family Therapist (LMFT)",
             bio: "Facilitates family and couples therapy sessions. Specializes in relationship issues, communication problems, and family dynamics.",
-            avatar: "uploads/therapists/daniel_oluwaseyi.jpg"
+            avatar: "uploads/therapists/peter_adebayo.jpg"
         },
         status: "active",
         isVerified: true,
