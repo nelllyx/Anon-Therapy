@@ -447,8 +447,13 @@ const seedDatabase = async () => {
         await therapist.deleteMany({});
         console.log('Cleared existing therapist data');
 
-        // Insert dummy therapists
-        const createdTherapists = await therapist.insertMany(dummyTherapists);
+        // Create therapists one by one to trigger password hashing middleware
+        const createdTherapists = [];
+        for (const therapistData of dummyTherapists) {
+            const newTherapist = await therapist.create(therapistData);
+            createdTherapists.push(newTherapist);
+            console.log(`Created therapist: ${newTherapist.firstName} ${newTherapist.lastName}`);
+        }
         console.log(`Successfully created ${createdTherapists.length} therapist records`);
 
         // Display summary

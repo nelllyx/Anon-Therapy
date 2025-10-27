@@ -29,9 +29,11 @@ node seedTherapistData.js
 
 This will:
 - Clear existing therapist data (optional)
-- Insert 20 therapist records
+- Create 20 therapist records with properly hashed passwords
 - Display a summary of created therapists
 - Show specialization breakdown
+
+**Note**: The script now uses `.create()` instead of `.insertMany()` to ensure passwords are properly hashed by the schema middleware.
 
 ### Option 2: Use in Your Tests
 ```javascript
@@ -41,11 +43,23 @@ const therapist = require('./model/therapistSchema');
 // Create a single therapist
 const newTherapist = await therapist.create(simpleTherapistData[0]);
 
-// Create multiple therapists
-const therapists = await therapist.insertMany(simpleTherapistData);
+// Create multiple therapists (RECOMMENDED)
+for (const therapistData of simpleTherapistData) {
+    const newTherapist = await therapist.create(therapistData);
+    console.log(`Created therapist: ${newTherapist.firstName} ${newTherapist.lastName}`);
+}
+
+// DON'T use insertMany() as it bypasses password hashing
+// const therapists = await therapist.insertMany(simpleTherapistData); // ❌ Won't hash passwords
 ```
 
-### Option 3: Import Specific Data
+### Option 3: Fix Existing Data
+If you've already run the seed script with unhashed passwords, use this fix script:
+```bash
+node fixTherapistPasswords.js
+```
+
+### Option 4: Import Specific Data
 ```javascript
 const { dummyTherapists } = require('./seedTherapistData');
 

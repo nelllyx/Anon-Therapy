@@ -71,17 +71,18 @@ const simpleTherapistData = [
 /*
 const therapist = require('./model/therapistSchema');
 
+// IMPORTANT: Always use .create() instead of .insertMany() to ensure password hashing
 // To create a single therapist:
 const newTherapist = await therapist.create(simpleTherapistData[0]);
 
-// To create multiple therapists:
-const therapists = await therapist.insertMany(simpleTherapistData);
-
-// To create therapists one by one:
+// To create multiple therapists (RECOMMENDED):
 for (const therapistData of simpleTherapistData) {
     const newTherapist = await therapist.create(therapistData);
     console.log(`Created therapist: ${newTherapist.firstName} ${newTherapist.lastName}`);
 }
+
+// DON'T use insertMany() as it bypasses password hashing middleware:
+// const therapists = await therapist.insertMany(simpleTherapistData); // ❌ This won't hash passwords
 */
 
 module.exports = simpleTherapistData;
