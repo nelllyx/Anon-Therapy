@@ -1,0 +1,171 @@
+// Notification Service for Live Notifications
+// This service provides easy-to-use functions for sending notifications
+
+class NotificationService {
+    constructor(io) {
+        this.io = io;
+    }
+
+    // Send notification to a specific user
+    sendToUser(userId, notification) {
+        const notificationData = {
+            id: Date.now(),
+            type: notification.type || 'info',
+            title: notification.title,
+            message: notification.message,
+            data: notification.data || {},
+            timestamp: new Date(),
+            read: false
+        };
+
+        return this.io.sendNotificationToUser(userId, notificationData);
+    }
+
+    // Send notification to all users of a specific role
+    sendToRole(role, notification) {
+        const notificationData = {
+            id: Date.now(),
+            type: notification.type || 'info',
+            title: notification.title,
+            message: notification.message,
+            data: notification.data || {},
+            timestamp: new Date(),
+            read: false,
+            targetRole: role
+        };
+
+        this.io.sendNotificationToRole(role, notificationData);
+    }
+
+    // Send notification to all online users
+    sendToAll(notification) {
+        const notificationData = {
+            id: Date.now(),
+            type: notification.type || 'info',
+            title: notification.title,
+            message: notification.message,
+            data: notification.data || {},
+            timestamp: new Date(),
+            read: false,
+            broadcast: true
+        };
+
+        this.io.sendNotificationToAll(notificationData);
+    }
+
+    // Predefined notification types for therapy app
+
+    // New session booking notification
+    notifyNewSessionBooking(therapistId, sessionData) {
+        return this.sendToUser(therapistId, {
+            type: 'session_booking',
+            title: 'New Session Booking',
+            message: `You have a new session booking from ${sessionData.clientName}`,
+            data: {
+                sessionId: sessionData.sessionId,
+                clientId: sessionData.clientId,
+                clientName: sessionData.clientName,
+                sessionDate: sessionData.sessionDate,
+                sessionTime: sessionData.sessionTime
+            }
+        });
+    }
+
+    // Session reminder notification
+    notifySessionReminder(userId, sessionData) {
+        return this.sendToUser(userId, {
+            type: 'session_reminder',
+            title: 'Session Reminder',
+            message: `Your session with ${sessionData.therapistName} starts in 15 minutes`,
+            data: {
+                sessionId: sessionData.sessionId,
+                therapistName: sessionData.therapistName,
+                sessionTime: sessionData.sessionTime
+            }
+        });
+    }
+
+    // Session cancellation notification
+    notifySessionCancellation(userId, sessionData) {
+        return this.sendToUser(userId, {
+            type: 'session_cancelled',
+            title: 'Session Cancelled',
+            message: `Your session with ${sessionData.therapistName} has been cancelled`,
+            data: {
+                sessionId: sessionData.sessionId,
+                therapistName: sessionData.therapistName,
+                reason: sessionData.reason
+            }
+        });
+    }
+
+    // New message notification
+    notifyNewMessage(userId, messageData) {
+        return this.sendToUser(userId, {
+            type: 'new_message',
+            title: 'New Message',
+            message: `You have a new message from ${messageData.senderName}`,
+            data: {
+                messageId: messageData.messageId,
+                senderId: messageData.senderId,
+                senderName: messageData.senderName,
+                preview: messageData.preview
+            }
+        });
+    }
+
+    // Payment notification
+    notifyPayment(userId, paymentData) {
+        return this.sendToUser(userId, {
+            type: 'payment',
+            title: 'Payment Update',
+            message: paymentData.message,
+            data: {
+                amount: paymentData.amount,
+                status: paymentData.status,
+                transactionId: paymentData.transactionId
+            }
+        });
+    }
+
+    // System maintenance notification
+    notifySystemMaintenance() {
+        return this.sendToAll({
+            type: 'system_maintenance',
+            title: 'System Maintenance',
+            message: 'The system will be under maintenance from 2:00 AM to 4:00 AM',
+            data: {
+                startTime: '2:00 AM',
+                endTime: '4:00 AM',
+                duration: '2 hours'
+            }
+        });
+    }
+
+    // New therapist registration notification (for admins)
+    notifyNewTherapistRegistration(adminId, therapistData) {
+        return this.sendToUser(adminId, {
+            type: 'new_therapist',
+            title: 'New Therapist Registration',
+            message: `${therapistData.name} has registered as a therapist`,
+            data: {
+                therapistId: therapistData.id,
+                name: therapistData.name,
+                specialization: therapistData.specialization,
+                email: therapistData.email
+            }
+        });
+    }
+
+    // Get online users statistics
+    getOnlineStats() {
+        return {
+            totalOnline: this.io.getOnlineUsersCount(),
+            therapists: this.io.getOnlineUsersByRole('therapist').length,
+            clients: this.io.getOnlineUsersByRole('client').length,
+            admins: this.io.getOnlineUsersByRole('admin').length
+        };
+    }
+}
+
+module.exports = NotificationService;
