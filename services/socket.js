@@ -47,12 +47,22 @@ function socketConnection(server) {
             connectedAt: new Date()
         });
 
+
+        // Check if user is online
+        if (onlineUsers.has(socket.user.id)) {
+            const userSession = onlineUsers.get(socket.user.id);
+            console.log(userSession);
+        }
+
+
+
         // Notify user of successful connection
         socket.emit("connected", { 
             message: "Successfully connected for notifications",
             userId: socket.user.id,
             userRole: socket.user.role
         });
+
 
         // Join user-specific notification room
         socket.on("join_notifications", (callback) => {

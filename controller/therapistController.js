@@ -197,6 +197,17 @@ exports.assignTimeForSession = catchAsync( async (req, res, next) => {
         {new: true}
     )
 
+    const notifyUser = (userId, message) => {
+        if (onlineUsers.has(userId)) {
+            const userSession = onlineUsers.get(userId);
+            io.to(userSession.socketId).emit("notification", { message });
+        } else {
+            console.log(`User ${userId} is offline, saving notification to DB.`);
+        }
+    };
+
+
+
     if(!validSession)  return next(new AppError("Session not found", 400))
 
     res.status(200).json({
