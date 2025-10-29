@@ -199,8 +199,6 @@ exports.assignTimeForSession = catchAsync( async (req, res, next) => {
 
     if(!validSession)  return next(new AppError("Session not found", 400))
 
-    console.log(validSession)
-
     res.status(200).json({
         status: 'success',
         validSession

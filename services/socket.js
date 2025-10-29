@@ -6,12 +6,13 @@ const dotenv = require("dotenv");
 dotenv.config({ path: './config.env' });
 
 // Fix environment variable inconsistency
-const JWT_SECRET = process.env.JWT_SECRET || process.env.REFRESH_TOKEN_SECRET;
+const JWT_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 // Track online users for notifications
 const onlineUsers = new Map();
 
 function socketConnection(server) {
+
     const io = new Server(server, {
         cors: {
             origin: process.env.CLIENT_URL || "http://localhost:3000",
