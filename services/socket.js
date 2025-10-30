@@ -82,10 +82,12 @@ function socketConnection(server) {
             }
         });
 
+        console.log(socket.user.role)
+
         // Join role-based notification room (e.g., all therapists, all clients)
         socket.on("join_role_notifications", (callback) => {
             try {
-                const roleRoom = `${socket.user.role}s`;
+                const roleRoom = `${socket.user.role}`;
                 socket.join(roleRoom);
                 console.log(`User ${socket.user.id} joined role room: ${roleRoom}`);
                 

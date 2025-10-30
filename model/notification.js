@@ -8,6 +8,11 @@ const notificationSchema = new mongoose.Schema({
         required: true
     },
 
+    type: {
+        type: String,
+        default: 'info',
+    },
+
     title: String,
 
     message: String,
@@ -18,6 +23,12 @@ const notificationSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+
+    readAt: {
+        type: Date,
+
+    },
+
     createdAt: { type: Date, default: Date.now }
 });
 
