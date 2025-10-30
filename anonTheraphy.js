@@ -400,6 +400,8 @@ const server = anonTherapy.listen(port, () => {
     console.log(`App running on port ${port}...`)
 })
 
-socketConnection(server)
+// Initialize socket and expose io to the app for controllers
+const io = socketConnection(server)
+anonTherapy.set('io', io)
 
 

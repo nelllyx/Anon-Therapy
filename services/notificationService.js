@@ -1,13 +1,15 @@
 // Notification Service for Live Notifications
 // This service provides easy-to-use functions for sending notifications
 
+const Notifications = require('../model/notificationSchema')
+
 class NotificationService {
     constructor(io) {
         this.io = io;
     }
 
     // Send notification to a specific user
-    sendToUser(userId, notification) {
+    async sendToUser(userId, notification) {
         const notificationData = {
             id: Date.now(),
             type: notification.type || 'info',
@@ -18,11 +20,21 @@ class NotificationService {
             read: false
         };
 
-        return this.io.sendNotificationToUser(userId, notificationData);
+        // Persist to DB so user sees it even if offline
+        await Notifications.create({
+            userId,
+            type: notificationData.type,
+            title: notificationData.title,
+            message: notificationData.message,
+            data: notificationData.data,
+        })
+
+        // Try to deliver live if online
+        return this.io.sendNotificationToUser ? this.io.sendNotificationToUser(userId, notificationData) : false;
     }
 
     // Send notification to all users of a specific role
-    sendToRole(role, notification) {
+    async sendToRole(role, notification) {
         const notificationData = {
             id: Date.now(),
             type: notification.type || 'info',
@@ -34,7 +46,8 @@ class NotificationService {
             targetRole: role
         };
 
-        this.io.sendNotificationToRole(role, notificationData);
+        // Live broadcast to role (persistence optional per-user; skip bulk DB writes here)
+        if (this.io.sendNotificationToRole) this.io.sendNotificationToRole(role, notificationData);
     }
 
     // Send notification to all online users
@@ -50,7 +63,7 @@ class NotificationService {
             broadcast: true
         };
 
-        this.io.sendNotificationToAll(notificationData);
+        if (this.io.sendNotificationToAll) this.io.sendNotificationToAll(notificationData);
     }
 
     // Predefined notification types for therapy app

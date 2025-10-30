@@ -131,10 +131,14 @@ exports.initializePayment = catchAsync(
     }
 )
 
+const NotificationService = require('../services/notificationService')
+
 exports.confirmPayment = catchAsync(
     async (req,res)=>{
         const paymentReference = req.params.reference
         const userId = req.user.id
+        const io = req.app.get('io')
+        const notifier = new NotificationService(io)
         const response = await fetch (`https://api.paystack.co/transaction/verify/${paymentReference}`,{
             method: 'GET',
             headers: {
@@ -153,14 +157,36 @@ exports.confirmPayment = catchAsync(
                 subscription.status = 'subscribed';
                 subscription.isSubscriptionActive = true;
                 await subscription.save();
+
+                // Notify user (persist + live if online)
+                await notifier.notifyPayment(userId, {
+                    message: 'Your payment was successful',
+                    amount: payment.amount,
+                    status: 'successful',
+                    transactionId: data.data.reference || paymentReference
+                })
             } else if (transactionStatus === 'failed') {
-                const payment = await Payment.findById(userId).exec();
+                const payment = await Payment.findOne({ userId }).exec();
                 payment.status = 'failed';
                 await payment.save();
+
+                await notifier.notifyPayment(userId, {
+                    message: 'Your payment failed',
+                    amount: payment.amount,
+                    status: 'failed',
+                    transactionId: data.data.reference || paymentReference
+                })
             }else if(transactionStatus === 'abandoned'){
                 const payment = await Payment.findOne({userId}).exec()
                 payment.status = 'abandoned'
-                payment.save()
+                await payment.save()
+
+                await notifier.notifyPayment(userId, {
+                    message: 'Your payment was abandoned',
+                    amount: payment.amount,
+                    status: 'abandoned',
+                    transactionId: data.data.reference || paymentReference
+                })
             }
 
             res.status(200).json({
