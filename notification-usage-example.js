@@ -4,11 +4,11 @@
 const NotificationService = require('./services/notificationService');
 
 // Example: In your session booking controller
-const notifySessionBooking = (io, therapistId, sessionData) => {
+const notifySessionBooking = async (io, therapistId, sessionData) => {
     const notificationService = new NotificationService(io);
     
     // Send notification to therapist about new booking
-    notificationService.notifyNewSessionBooking(therapistId, {
+     await  notificationService.notifyNewSessionBooking(therapistId, {
         sessionId: sessionData._id,
         clientId: sessionData.userId,
         clientName: sessionData.clientName,
@@ -18,11 +18,11 @@ const notifySessionBooking = (io, therapistId, sessionData) => {
 };
 
 // Example: In your session controller
-const notifySessionReminder = (io, userId, sessionData) => {
+const notifySessionReminder = async (io, userId, sessionData) => {
     const notificationService = new NotificationService(io);
     
     // Send reminder 15 minutes before session
-    notificationService.notifySessionReminder(userId, {
+    await notificationService.notifySessionReminder(userId, {
         sessionId: sessionData._id,
         therapistName: sessionData.therapistName,
         sessionTime: sessionData.startTime
@@ -30,10 +30,10 @@ const notifySessionReminder = (io, userId, sessionData) => {
 };
 
 // Example: In your message controller
-const notifyNewMessage = (io, recipientId, messageData) => {
+const notifyNewMessage = async(io, recipientId, messageData) => {
     const notificationService = new NotificationService(io);
     
-    notificationService.notifyNewMessage(recipientId, {
+   await notificationService.notifyNewMessage(recipientId, {
         messageId: messageData._id,
         senderId: messageData.senderId,
         senderName: messageData.senderName,
@@ -41,23 +41,14 @@ const notifyNewMessage = (io, recipientId, messageData) => {
     });
 };
 
-// Example: In your payment controller
-const notifyPaymentSuccess = (io, userId, paymentData) => {
-    const notificationService = new NotificationService(io);
-    
-    notificationService.notifyPayment(userId, {
-        message: `Payment of $${paymentData.amount} was successful`,
-        amount: paymentData.amount,
-        status: 'success',
-        transactionId: paymentData.transactionId
-    });
-};
+
 
 // Example: In your admin controller
-const notifyNewTherapistRegistration = (io, adminId, therapistData) => {
+const notifyNewTherapistRegistration = async (io, adminId, therapistData) => {
+
     const notificationService = new NotificationService(io);
     
-    notificationService.notifyNewTherapistRegistration(adminId, {
+   await notificationService.notifyNewTherapistRegistration(adminId, {
         id: therapistData._id,
         name: `${therapistData.firstName} ${therapistData.lastName}`,
         specialization: therapistData.specialization,
@@ -73,10 +64,10 @@ const notifySystemMaintenance = (io) => {
 };
 
 // Example: Custom notification
-const sendCustomNotification = (io, userId, notification) => {
+const sendCustomNotification = async (io, userId, notification) => {
     const notificationService = new NotificationService(io);
     
-    notificationService.sendToUser(userId, {
+   await notificationService.sendToUser(userId, {
         type: 'custom',
         title: notification.title,
         message: notification.message,
@@ -85,10 +76,10 @@ const sendCustomNotification = (io, userId, notification) => {
 };
 
 // Example: Role-based notification
-const notifyAllTherapists = (io, notification) => {
+const notifyAllTherapists = async (io, notification) => {
     const notificationService = new NotificationService(io);
     
-    notificationService.sendToRole('therapist', {
+    await notificationService.sendToRole('therapist', {
         type: 'announcement',
         title: 'Important Update',
         message: 'New therapy guidelines have been published',

@@ -5,6 +5,8 @@ const AppError = require('../exceptions/AppErrors');
 const upload = require('../config/multerConfig')
 const {sendOtpToUserEmail, generateUserOtp} = require("../services/authenticationService");
 const Session = require('../model/sessionSchema');
+const NotificationService = require('../services/notificationService')
+
 const {Types} = require("mongoose");
 
 // Separate multer middleware from the controller function
@@ -195,20 +197,21 @@ exports.assignTimeForSession = catchAsync( async (req, res, next) => {
         sessionId,
         {$set: updates },
         {new: true}
-    )
+    ).populate('therapistId', 'firstName lastName ');
 
-    const notifyUser = (userId, message) => {
-        if (onlineUsers.has(userId)) {
-            const userSession = onlineUsers.get(userId);
-            io.to(userSession.socketId).emit("notification", { message });
-        } else {
-            console.log(`User ${userId} is offline, saving notification to DB.`);
-        }
-    };
+    const io = req.app.get('io')
+    const notifier = new NotificationService(io)
+
+    console.log(validSession.userId)
+
+    await notifier.notifyUserSessionTime(validSession.userId, {
+    therapistName: validSession.therapistId.firstName,
+    sessionTime: validSession.scheduledTime,
+    sessionDate: validSession.date,
+    })
 
 
-
-    if(!validSession)  return next(new AppError("Session not found", 400))
+     if(!validSession)  return next(new AppError("Session not found", 400))
 
     res.status(200).json({
         status: 'success',

@@ -12,6 +12,7 @@ const Subscriptions = require('../model/Subscriptions')
 const SessionPreference = require('../model/sessionPreferenceSchema')
 const Session = require("../model/sessionSchema");
 const Therapist = require("../model/therapistSchema");
+const NotificationService = require('../services/notificationService')
 
 
 exports.signUp = catchAsync(
@@ -131,7 +132,6 @@ exports.initializePayment = catchAsync(
     }
 )
 
-const NotificationService = require('../services/notificationService')
 
 exports.confirmPayment = catchAsync(
     async (req,res)=>{
@@ -159,8 +159,8 @@ exports.confirmPayment = catchAsync(
                 await subscription.save();
 
                 // Notify user (persist + live if online)
-                await notifier.notifyPayment(userId, {
-                    message: 'Your payment was successful',
+                await notifier.notifyPaymentStatus(userId, {
+                    message: `Payment of #${payment.amount} was successful`,
                     amount: payment.amount,
                     status: 'successful',
                     transactionId: data.data.reference || paymentReference
@@ -170,7 +170,7 @@ exports.confirmPayment = catchAsync(
                 payment.status = 'failed';
                 await payment.save();
 
-                await notifier.notifyPayment(userId, {
+                await notifier.notifyPaymentStatus(userId, {
                     message: 'Your payment failed',
                     amount: payment.amount,
                     status: 'failed',
@@ -181,7 +181,7 @@ exports.confirmPayment = catchAsync(
                 payment.status = 'abandoned'
                 await payment.save()
 
-                await notifier.notifyPayment(userId, {
+                await notifier.notifyPaymentStatus(userId, {
                     message: 'Your payment was abandoned',
                     amount: payment.amount,
                     status: 'abandoned',
@@ -236,6 +236,16 @@ exports.createBooking = catchAsync(
 
         const sessionDates = generateSessionDates(sessionDays,planName)
 
+        const io = req.app.get('io')
+        const notifier = new NotificationService(io)
+
+        await notifier.notifyNewTherapistAssignment(userId, {
+            message: `A therapist has been assigned to handle your sessions DR. ${selectedTherapist.firstName}`,
+            therapistFirstName: selectedTherapist.firstName,
+            therapistLastName: selectedTherapist.lastName,
+            therapistBio: selectedTherapist.profile.bio,
+        })
+
         const sessions = await Promise.all(
             sessionDates.map(async (date) => {
                 return await Session.create({
@@ -265,9 +275,7 @@ exports.createBooking = catchAsync(
     })
 
 
-exports.checkPaymentHistory = catchAsync(
-
-    async (req,res,next) => {
+exports.checkPaymentHistory = catchAsync(async (req,res,next) => {
         const userId = req.user.id
         const User = await Users.findById(userId)
 
@@ -358,57 +366,6 @@ exports.getDashboard = catchAsync(async (req, res, next) => {
         throw new AppError('User not found', 404);
     }
 
-    // // Get active subscription with plan details
-    // const activeSubscription = await Subscriptions.findOne({
-    //     userId: userId,
-    //     isSubscriptionActive: true
-    // }).populate({
-    //     path: 'planId',
-    //     select: 'name price features'
-    // });
-    //
-    // // Get upcoming sessions (next 4)
-    // const upcomingSessions = await Session.find({
-    //     userId: userId,
-    //     date: { $gt: currentDate }
-    // })
-    // .sort({ date: 1 })
-    // .limit(4)
-    // .populate({
-    //     path: 'therapistId',
-    //     select: 'firstName lastName profile.avatar specialization'
-    // });
-    //
-    // // Get completed sessions count
-    // const completedSessionsCount = await Session.countDocuments({
-    //     userId: userId,
-    //     status: 'completed'
-    // });
-    //
-    // // Get total sessions count for current subscription
-    // const totalSessionsCount = await Session.countDocuments({
-    //     userId: userId,
-    //     subscriptionId: activeSubscription?._id
-    // });
-    //
-    // // Get recent payment history (last 3)
-    // const recentPayments = await Payment.find({ userId: userId })
-    //     .sort({ dateOfPayment: -1 })
-    //     .limit(3)
-    //     .select('amount status dateOfPayment');
-    //
-    // // Calculate subscription progress
-    // let subscriptionProgress = null;
-    // if (activeSubscription) {
-    //     const usedSessions = totalSessionsCount;
-    //     const maxSessions = activeSubscription.maxSession;
-    //     subscriptionProgress = {
-    //         used: usedSessions,
-    //         total: maxSessions,
-    //         remaining: maxSessions - usedSessions,
-    //         percentage: Math.round((usedSessions / maxSessions) * 100)
-    //     };
-    // }
 
     res.status(200).json({
         status: 'success',
@@ -419,35 +376,7 @@ exports.getDashboard = catchAsync(async (req, res, next) => {
                 email: user.email,
                 gender: user.gender,
              },
-            // subscription: activeSubscription ? {
-            //     id: activeSubscription._id,
-            //     plan: activeSubscription.planId,
-            //     status: activeSubscription.status,
-            //     startDate: activeSubscription.startDate,
-            //     endDate: activeSubscription.endDate,
-            //     sessionsPerWeek: activeSubscription.sessionsPerWeek,
-            //     progress: subscriptionProgress
-            // } : null,
-    //         upcomingSessions: upcomingSessions.map(session => ({
-    //             id: session._id,
-    //             date: session.date,
-    //             startTime: session.startTime,
-    //             duration: session.duration,
-    //             therapyType: session.therapyType,
-    //             status: session.status,
-    //             therapist: session.therapistId
-    //         })),
-    //         statistics: {
-    //             completedSessions: completedSessionsCount,
-    //             totalSessions: totalSessionsCount,
-    //             upcomingSessions: upcomingSessions.length
-    //         },
-    //         recentPayments: recentPayments,
-    //         sessionPreference: sessionPreference ? {
-    //             therapyType: sessionPreference.therapyType,
-    //             selectedDay: sessionPreference.selectedDay,
-    //             preferredTime: sessionPreference.preferredTime
-    //         } : null
+
          }
     });
 });

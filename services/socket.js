@@ -82,7 +82,6 @@ function socketConnection(server) {
             }
         });
 
-        console.log(socket.user.role)
 
         // Join role-based notification room (e.g., all therapists, all clients)
         socket.on("join_role_notifications", (callback) => {

@@ -1,6 +1,3 @@
-// Notification Service for Live Notifications
-// This service provides easy-to-use functions for sending notifications
-
 const Notifications = require('../model/notificationSchema')
 
 class NotificationService {
@@ -68,6 +65,26 @@ class NotificationService {
 
     // Predefined notification types for therapy app
 
+
+    // New therapist assigned to client
+
+    notifyNewTherapistAssignment(userId, sessionData) {
+
+        return this.sendToUser(userId, {
+            type: 'therapist_assigned',
+            title: 'Therapist Assigned',
+            message: `A therapist has been assigned to handle your sessions. DR ${sessionData.therapistFirstName}   ${sessionData.therapistLastName}`,
+            data: {
+                firstName: sessionData.therapistFirstName,
+                lastName: sessionData.therapistLastName,
+                therapistBio: sessionData.therapistBio
+
+            }
+        });
+    }
+
+
+
     // New session booking notification
     notifyNewSessionBooking(therapistId, sessionData) {
         return this.sendToUser(therapistId, {
@@ -80,6 +97,22 @@ class NotificationService {
                 clientName: sessionData.clientName,
                 sessionDate: sessionData.sessionDate,
                 sessionTime: sessionData.sessionTime
+            }
+        });
+    }
+
+
+    // Session reminder notification
+
+    notifyUserSessionTime(userId, sessionData) {
+        return this.sendToUser(userId, {
+            type: 'session_time_set',
+            title: 'Session Time Sent',
+            message: `Your session with ${sessionData.therapistName} has been scheduled for ${sessionData.sessionTime} on ${sessionData.sessionDate}`,
+            data: {
+                therapistName: sessionData.therapistName,
+                sessionTime: sessionData.sessionTime,
+                sessionDate: sessionData.sessionDate
             }
         });
     }
@@ -128,7 +161,7 @@ class NotificationService {
     }
 
     // Payment notification
-    notifyPayment(userId, paymentData) {
+    notifyPaymentStatus(userId, paymentData) {
         return this.sendToUser(userId, {
             type: 'payment',
             title: 'Payment Update',
