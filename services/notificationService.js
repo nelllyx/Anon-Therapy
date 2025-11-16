@@ -91,13 +91,7 @@ class NotificationService {
             type: 'session_booking',
             title: 'New Session Booking',
             message: `You have a new session booking from ${sessionData.clientName}`,
-            data: {
-                sessionId: sessionData.sessionId,
-                clientId: sessionData.clientId,
-                clientName: sessionData.clientName,
-                sessionDate: sessionData.sessionDate,
-                sessionTime: sessionData.sessionTime
-            }
+
         });
     }
 

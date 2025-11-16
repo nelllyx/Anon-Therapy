@@ -14,6 +14,7 @@ const userRoutes = require('./routes/userRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const crypto = require('crypto');
 const therapistRoutes = require('./routes/therapistRoutes')
+const messageRoutes = require('./routes/messageRoutes')
 const Roles = require("./config/userRoles");
 const auth = require("./services/authenticationService");
 const Users = require("./model/userSchema");
@@ -337,6 +338,7 @@ anonTherapy.patch('/api/v1/resetPassword/:token', catchAsync(async (req, res, ne
 anonTherapy.use('/api/v1/admin', adminRoutes)
 anonTherapy.use('/api/v1/client', userRoutes)
 anonTherapy.use('/api/v1/therapist', therapistRoutes)
+anonTherapy.use('/api/v1/messages', messageRoutes)
 
 
 

@@ -3,18 +3,22 @@ const therapist = require('../model/therapistSchema')
 const {transporter} = require("../config/nodeMailer");
 const AppError = require('../exceptions/AppErrors');
 const upload = require('../config/multerConfig')
+const {uploadTemp} = require('../config/multerConfig')
 const {sendOtpToUserEmail, generateUserOtp} = require("../services/authenticationService");
 const Session = require('../model/sessionSchema');
 const NotificationService = require('../services/notificationService')
+const {uploadProfilePictureAsync} = require('../services/cloudinaryUploadService');
 
 const {Types} = require("mongoose");
 
 // Separate multer middleware from the controller function
 const uploadProfilePicture = upload.single('avatar');
+const uploadProfilePictureTemp = uploadTemp.single('avatar');
 
 exports.register = [
-    uploadProfilePicture,
+    uploadProfilePictureTemp,
     catchAsync(async (req, res, next) => {
+
         const startTime = Date.now();
         const existingTherapist = await therapist.findOne({email: req.body.email})
 
@@ -22,9 +26,11 @@ exports.register = [
             return next(new AppError("Email already exists", 400))
         }
 
-            const profilePicture = req.file ? req.file.path : '';
-
-            const newTherapist = await therapist.create({...req.body, profilePicture})
+            // Create therapist with placeholder or empty profile picture
+            const newTherapist = await therapist.create({
+                ...req.body, 
+                profilePicture: '' // Will be updated after async upload
+            })
             console.log('Therapist created:', newTherapist);
 
             // Generate OTP for the new therapist
@@ -32,19 +38,35 @@ exports.register = [
             await generateUserOtp(newTherapist)
             console.log('OTP generated successfully');
 
-            // Send OTP email
-            console.log('Sending OTP email...');
-            const info = await transporter.sendMail(sendOtpToUserEmail(newTherapist.email, newTherapist.otp, newTherapist.firstName))
-            console.log('Email sent successfully:', info.response);
-        const endTime = Date.now();
+            const endTime = Date.now();
         console.log(`Request processed in ${endTime - startTime}ms`);
 
+        // Send response immediately
         res.status(201).json({
             status: 'success',
             data:{
                 therapist: newTherapist
             }
         })
+
+        // Send OTP email
+        console.log('Sending OTP email...');
+        const info = await transporter.sendMail(sendOtpToUserEmail(newTherapist.email, newTherapist.otp, newTherapist.firstName))
+        console.log('Email sent successfully:', info.response);
+
+
+        // Upload profile picture asynchronously after response is sent
+        if (req.file) {
+            // Fire-and-forget async upload with proper error handling
+            await (async () => {
+                try {
+                    await uploadProfilePictureAsync(req.file.path, newTherapist._id);
+                    console.log(`Profile picture uploaded successfully for therapist ${newTherapist._id}`);
+                } catch (error) {
+                    console.error(`Failed to upload profile picture for therapist ${newTherapist._id}:`, error);
+                }
+            })();
+        }
     })
 ]
 
@@ -199,19 +221,21 @@ exports.assignTimeForSession = catchAsync( async (req, res, next) => {
         {new: true}
     ).populate('therapistId', 'firstName lastName ');
 
+    if(!validSession)  return next(new AppError("Session not found", 400))
+
+    // Convert userId to string to match JWT token format (socket stores string IDs)
+    const userId = validSession.userId.toString()
     const io = req.app.get('io')
     const notifier = new NotificationService(io)
 
-    console.log(validSession.userId)
-
-    await notifier.notifyUserSessionTime(validSession.userId, {
-    therapistName: validSession.therapistId.firstName,
-    sessionTime: validSession.scheduledTime,
-    sessionDate: validSession.date,
+    // Send notification - the service will save to DB and try to deliver if user is online
+    const notify = await notifier.notifyUserSessionTime(userId, {
+        therapistName: validSession.therapistId.firstName,
+        sessionTime: validSession.scheduledTime,
+        sessionDate: validSession.date,
     })
 
-
-     if(!validSession)  return next(new AppError("Session not found", 400))
+    console.log('Notification sent:', notify)
 
     res.status(200).json({
         status: 'success',

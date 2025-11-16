@@ -28,14 +28,6 @@ exports.signUp = catchAsync(
 
       await generateUserOtp(newUser)
 
-     // const info =  await transport.sendMail(sendOtpToUserEmail(email, newUser.otp ,username),(err, info) =>{
-     //
-     //        if(err){
-     //            return console.error('Error occurred while sending email:', err)
-     //        }
-     //        console.log('Email sent successfully:', info.response)
-     //    })
-
         const info =  await transporter.sendMail(sendOtpToUserEmail(email, newUser.otp ,username))
 
         console.log('Email sent successfully:', info.response);
@@ -234,6 +226,8 @@ exports.createBooking = catchAsync(
 
         if (!selectedTherapist) throw new AppError('No therapist available', 404);
 
+      const therapistId = selectedTherapist._id
+
         const sessionDates = generateSessionDates(sessionDays,planName)
 
         const io = req.app.get('io')
@@ -246,11 +240,16 @@ exports.createBooking = catchAsync(
             therapistBio: selectedTherapist.profile.bio,
         })
 
+
+        await notifier.notifyNewSessionBooking(therapistId.toString(), {
+            message: `A client has been assigned to you for the month. ${selectedTherapist.firstName}`,
+        })
+
         const sessions = await Promise.all(
             sessionDates.map(async (date) => {
                 return await Session.create({
                     userId,
-                    therapistId: selectedTherapist._id,
+                    therapistId,
                     date,
                     preferredTime: sessionPreference.preferredTime,
                     startTime: null,
