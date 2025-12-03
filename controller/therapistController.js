@@ -1,15 +1,15 @@
 const catchAsync = require('../exceptions/catchAsync')
 const therapist = require('../model/therapistSchema')
-const {transporter} = require("../config/nodeMailer");
+const { transporter } = require("../config/nodeMailer");
 const AppError = require('../exceptions/AppErrors');
 const upload = require('../config/multerConfig')
-const {uploadTemp} = require('../config/multerConfig')
-const {sendOtpToUserEmail, generateUserOtp} = require("../services/authenticationService");
+const { uploadTemp } = require('../config/multerConfig')
+const { sendOtpToUserEmail, generateUserOtp } = require("../services/authenticationService");
 const Session = require('../model/sessionSchema');
 const NotificationService = require('../services/notificationService')
-const {uploadProfilePictureAsync} = require('../services/cloudinaryUploadService');
+const { uploadProfilePictureAsync } = require('../services/cloudinaryUploadService');
 
-const {Types} = require("mongoose");
+const { Types } = require("mongoose");
 
 // Separate multer middleware from the controller function
 const uploadProfilePicture = upload.single('avatar');
@@ -20,31 +20,31 @@ exports.register = [
     catchAsync(async (req, res, next) => {
 
         const startTime = Date.now();
-        const existingTherapist = await therapist.findOne({email: req.body.email})
+        const existingTherapist = await therapist.findOne({ email: req.body.email })
 
-        if(existingTherapist) {
+        if (existingTherapist) {
             return next(new AppError("Email already exists", 400))
         }
 
-            // Create therapist with placeholder or empty profile picture
-            const newTherapist = await therapist.create({
-                ...req.body, 
-                profilePicture: '' // Will be updated after async upload
-            })
-            console.log('Therapist created:', newTherapist);
+        // Create therapist with placeholder or empty profile picture
+        const newTherapist = await therapist.create({
+            ...req.body,
+            profilePicture: '' // Will be updated after async upload
+        })
+        console.log('Therapist created:', newTherapist);
 
-            // Generate OTP for the new therapist
-            console.log('Generating OTP...');
-            await generateUserOtp(newTherapist)
-            console.log('OTP generated successfully');
+        // Generate OTP for the new therapist
+        console.log('Generating OTP...');
+        await generateUserOtp(newTherapist)
+        console.log('OTP generated successfully');
 
-            const endTime = Date.now();
+        const endTime = Date.now();
         console.log(`Request processed in ${endTime - startTime}ms`);
 
         // Send response immediately
         res.status(201).json({
             status: 'success',
-            data:{
+            data: {
                 therapist: newTherapist
             }
         })
@@ -70,24 +70,24 @@ exports.register = [
     })
 ]
 
-exports.updatePassword = catchAsync( async (req, res, next) => {
+exports.updatePassword = catchAsync(async (req, res, next) => {
     const userId = req.user.id
-    const {currentPassword, newPassword} = req.body
+    const { currentPassword, newPassword } = req.body
 
     const Therapist = await therapist.findById(userId)
 
-    if(!Therapist) {
+    if (!Therapist) {
         return next(new AppError("User not found", 400))
     }
 
-    if(!await Therapist.correctPassword(currentPassword)) {
+    if (!await Therapist.correctPassword(currentPassword)) {
         return next(new AppError("Incorrect password", 400))
     }
 
     Therapist.password = newPassword
 
     await Therapist.save()
-    
+
     res.status(200).json({
         status: 'success',
         message: 'Password updated successfully'
@@ -110,12 +110,12 @@ exports.updateProfile = [
 
         const userUpdates = {}
 
-        if(userData.firstName) userUpdates.firstName = userData.firstName
-        if(userData.lastName) userUpdates.lastName = userData.lastName
-        if(userData.email) userUpdates.email = userData.email
-        if(userData.phoneNumber) userUpdates.phoneNumber = userData.phoneNumber
-        if(userData.specialization) userUpdates.specialization = userData.specialization
-        if(userData.yearsOfExperience) userUpdates.yearsOfExperience = userData.yearsOfExperience
+        if (userData.firstName) userUpdates.firstName = userData.firstName
+        if (userData.lastName) userUpdates.lastName = userData.lastName
+        if (userData.email) userUpdates.email = userData.email
+        if (userData.phoneNumber) userUpdates.phoneNumber = userData.phoneNumber
+        if (userData.specialization) userUpdates.specialization = userData.specialization
+        if (userData.yearsOfExperience) userUpdates.yearsOfExperience = userData.yearsOfExperience
 
 
         if (userData.bio) userUpdates["profile.bio"] = userData.bio;
@@ -146,69 +146,81 @@ exports.updateProfile = [
     })
 ]
 
-exports.getSessionsForTheWeek = catchAsync( async (req, res, next) => {
+exports.getSessionsForTheWeek = catchAsync(async (req, res, next) => {
 
     const therapistId = req.user.id
 
-    const currentDate = new Date();
-    const sevenDaysFromNow = new Date(currentDate);
-    sevenDaysFromNow.setDate(currentDate.getDate() + 7);
+    // Date calculations
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const sevenDaysFromNow = new Date(now);
+    sevenDaysFromNow.setDate(now.getDate() + 7);
 
 
-    const allSessions = await Session.find({therapistId: therapistId })
+    const allSessions = await Session.find({ therapistId: therapistId })
         .sort({ date: 1 })
-        .limit(10)
-        .populate({path: 'userId',
-            select: 'username',
+        .populate({
+            path: 'userId',
+            select: 'username email',
             model: 'Users'
         });
 
 
 
-    if (!allSessions || allSessions.length === 0) {
-        throw new AppError('No sessions found for this therapist', 404);
+    if (!allSessions) {
+        return res.status(200).json({
+            status: 'success',
+            data: {
+                today: [],
+                upcoming: [],
+                rescheduled: [],
+                completed: []
+            }
+        });
     }
 
 
     // Categorize sessions
-    const upcomingSessions = allSessions.filter(
-        session => {
-          const sessionDate =  new Date(session.date)
-            return sessionDate > currentDate && sessionDate <= sevenDaysFromNow
-        }
-    );
+    const todaySessions = allSessions.filter(session => {
+        const sessionDate = new Date(session.date);
+        return sessionDate >= startOfToday && sessionDate <= endOfToday && session.status !== 'rescheduled' && session.status !== 'completed';
+    });
 
-    const pastSessions = allSessions.filter(
-        session => new Date(session.date) <= currentDate
-    );
-
-    const completedSessions = pastSessions.filter(
-        session => session.status === 'completed'
-    );
+    const upcomingSessions = allSessions.filter(session => {
+        const sessionDate = new Date(session.date);
+        return sessionDate > endOfToday && sessionDate <= sevenDaysFromNow && session.status !== 'rescheduled' && session.status !== 'completed';
+    });
 
     const rescheduledSessions = allSessions.filter(
         session => session.status === 'rescheduled'
     );
 
+    const completedSessions = allSessions.filter(
+        session => session.status === 'completed'
+    );
+
 
     // Implementation for getting sessions for the week
-        res.status(200).json({
-            status: 'success',
-            message: 'Sessions for the week retrieved successfully',
-                data: {
-                    upcoming: upcomingSessions,
-                    completed: completedSessions,
-                    rescheduled: rescheduledSessions
-                }
-        })
-
+    res.status(200).json({
+        status: 'success',
+        message: 'Sessions for the week retrieved successfully',
+        data: {
+            today: todaySessions,
+            upcoming: upcomingSessions,
+            completed: completedSessions,
+            rescheduled: rescheduledSessions
+        }
     })
 
-exports.assignTimeForSession = catchAsync( async (req, res, next) => {
+})
 
-    const {sessionId} = req.params
+exports.assignTimeForSession = catchAsync(async (req, res, next) => {
 
-   const updates = req.body
+    const { sessionId } = req.params
+
+    const updates = req.body
 
     if (!Types.ObjectId.isValid(sessionId)) {
         return res.status(400).json({ error: 'Invalid session ID' });
@@ -217,11 +229,11 @@ exports.assignTimeForSession = catchAsync( async (req, res, next) => {
 
     const validSession = await Session.findByIdAndUpdate(
         sessionId,
-        {$set: updates },
-        {new: true}
+        { $set: updates },
+        { new: true }
     ).populate('therapistId', 'firstName lastName ');
 
-    if(!validSession)  return next(new AppError("Session not found", 400))
+    if (!validSession) return next(new AppError("Session not found", 400))
 
     // Convert userId to string to match JWT token format (socket stores string IDs)
     const userId = validSession.userId.toString()
@@ -248,19 +260,19 @@ exports.assignTimeForSession = catchAsync( async (req, res, next) => {
 exports.getDashboard = catchAsync(async (req, res, next) => {
     const therapistId = req.user.id;
     const currentDate = new Date();
-    
+
     // Get start of week (Monday) and end of week (Sunday)
     const startOfWeek = new Date(currentDate);
     startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1);
     startOfWeek.setHours(0, 0, 0, 0);
-    
+
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
 
     // Get therapist profile information
     const therapist = await therapist.findById(therapistId).select('-password -otp');
-    
+
     if (!therapist) {
         throw new AppError('Therapist not found', 404);
     }
@@ -273,11 +285,11 @@ exports.getDashboard = catchAsync(async (req, res, next) => {
             $lt: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1)
         }
     })
-    .populate({
-        path: 'userId',
-        select: 'username email gender'
-    })
-    .sort({ startTime: 1 });
+        .populate({
+            path: 'userId',
+            select: 'username email gender'
+        })
+        .sort({ startTime: 1 });
 
     // Get this week's sessions
     const weeklySessions = await Session.find({
@@ -287,23 +299,23 @@ exports.getDashboard = catchAsync(async (req, res, next) => {
             $lte: endOfWeek
         }
     })
-    .populate({
-        path: 'userId',
-        select: 'username email gender'
-    })
-    .sort({ date: 1, startTime: 1 });
+        .populate({
+            path: 'userId',
+            select: 'username email gender'
+        })
+        .sort({ date: 1, startTime: 1 });
 
     // Get upcoming sessions (next 7 days)
     const upcomingSessions = await Session.find({
         therapistId: therapistId,
         date: { $gt: currentDate }
     })
-    .sort({ date: 1 })
-    .limit(10)
-    .populate({
-        path: 'userId',
-        select: 'username email gender'
-    });
+        .sort({ date: 1 })
+        .limit(10)
+        .populate({
+            path: 'userId',
+            select: 'username email gender'
+        });
 
     // Get completed sessions count (all time)
     const completedSessionsCount = await Session.countDocuments({

@@ -7,7 +7,7 @@ const socketConnection = require('./services/socket')
 const cookieParser = require('cookie-parser')
 const AppError = require('./exceptions/AppErrors');
 const catchAsync = require('./exceptions/catchAsync')
-dotenv.config({path: './config.env'})
+dotenv.config({ path: './config.env' })
 
 
 const userRoutes = require('./routes/userRoutes')
@@ -16,19 +16,20 @@ const crypto = require('crypto');
 const therapistRoutes = require('./routes/therapistRoutes')
 const messageRoutes = require('./routes/messageRoutes')
 const Roles = require("./config/userRoles");
+const notificationRoutes = require('./routes/notificationRoutes');
 const auth = require("./services/authenticationService");
 const Users = require("./model/userSchema");
 const Therapist = require("./model/therapistSchema");
-const {CLIENT, THERAPIST} = require("./config/userRoles");
-const {transporter} = require("./config/nodeMailer");
-const {sendPasswordResetTokenToUserEmail, generateUserOtp, sendOtpToUserEmail, protect} = require("./services/authenticationService");
+const { CLIENT, THERAPIST } = require("./config/userRoles");
+const { transporter } = require("./config/nodeMailer");
+const { sendPasswordResetTokenToUserEmail, generateUserOtp, sendOtpToUserEmail, protect } = require("./services/authenticationService");
 const jwt = require("jsonwebtoken");
 const anonTherapy = express()
 
 anonTherapy.use(express.json())
 anonTherapy.use(cookieParser());
 
-anonTherapy.use(cors({origin: 'http://localhost:5173', credentials: true}))
+anonTherapy.use(cors({ origin: 'http://localhost:5173', credentials: true }))
 
 
 const otpResendLimiter = rateLimit({
@@ -55,36 +56,36 @@ anonTherapy.post('/api/v1/login', catchAsync(async (req, res, next) => {
 
     const user = client || therapist;
 
-        if(!user || (! await user.correctPassword(password))) return next  (new AppError("Invalid Email or Password", 401))
+    if (!user || (! await user.correctPassword(password))) return next(new AppError("Invalid Email or Password", 401))
 
-        // Check if user is verified
-        if (!user.isVerified) {
-            return next(new AppError('Please complete your email verification', 401));
-        }
+    // Check if user is verified
+    if (!user.isVerified) {
+        return next(new AppError('Please complete your email verification', 401));
+    }
 
     // Prepare user data based on type
     const userType = user.role
 
-        const refreshToken = await auth.saveRefreshToken(user._id, userType)
-        const accessToken = auth.createAccessToken(user._id, user.role);
+    const refreshToken = await auth.saveRefreshToken(user._id, userType)
+    const accessToken = auth.createAccessToken(user._id, user.role);
 
-        auth.setAuthCookies(res, accessToken, refreshToken)
+    auth.setAuthCookies(res, accessToken, refreshToken)
 
     const userData = userType === CLIENT
-            ? {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                role: user.role
-            }
-            : {
-                id: user._id,
-                firstName: user.firstName,
-                lastName: user.lastName,
+        ? {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role
+        }
+        : {
+            id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
 
-                email: user.email,
-                role: user.role
-            };
+            email: user.email,
+            role: user.role
+        };
 
     res.status(200).json({
         status: 'success',
@@ -190,9 +191,9 @@ anonTherapy.post('/api/v1/resend-otp', otpResendLimiter, catchAsync(async (req, 
 
     await user.save()
 
-    await transporter.sendMail(sendOtpToUserEmail(email, user.otp ,username),(err, info) =>{
+    await transporter.sendMail(sendOtpToUserEmail(email, user.otp, username), (err, info) => {
 
-        if(err){
+        if (err) {
             return console.error('Error occurred while sending email:', err)
         }
 
@@ -209,7 +210,7 @@ anonTherapy.post('/api/v1/resend-otp', otpResendLimiter, catchAsync(async (req, 
 anonTherapy.post('/api/v1/logout', (req, res) => {
 
     auth.clearAuthCookies(res)
-    
+
     res.status(200).json({
         status: 'success',
         message: 'Logged out successfully'
@@ -264,9 +265,9 @@ anonTherapy.get('/api/v1/validate', (req, res) => {
     }
 })
 
-anonTherapy.post('/api/v1/forgotPassword', catchAsync (async (req, res, next)=> {
+anonTherapy.post('/api/v1/forgotPassword', catchAsync(async (req, res, next) => {
 
-    const {email} = req.body
+    const { email } = req.body
 
     const [client, therapist] = await Promise.all([
         Users.findOne({ email: email }),
@@ -276,8 +277,8 @@ anonTherapy.post('/api/v1/forgotPassword', catchAsync (async (req, res, next)=> 
     const user = client || therapist
     const username = client.username || therapist.firstName
 
-    if(!user){
-        res.status(400).send( 'No user with such email')
+    if (!user) {
+        res.status(400).send('No user with such email')
     }
 
     const resetToken = auth.createPasswordResetToken(user)
@@ -286,9 +287,9 @@ anonTherapy.post('/api/v1/forgotPassword', catchAsync (async (req, res, next)=> 
 
     const resetLink = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`
 
-    await transporter.sendMail(sendPasswordResetTokenToUserEmail( resetLink ,username, email),(err, info) =>{
+    await transporter.sendMail(sendPasswordResetTokenToUserEmail(resetLink, username, email), (err, info) => {
 
-        if(err){
+        if (err) {
             return next(new AppError('Error occurred while sending email. Try again later!', 500))
         }
 
@@ -312,13 +313,13 @@ anonTherapy.patch('/api/v1/resetPassword/:token', catchAsync(async (req, res, ne
         .digest('hex')
 
     const [client, therapist] = await Promise.all([
-        Users.findOne({ passwordResetToken: hashedToken, passwordResetExpires: {$gt: Date.now() } }),
-        Therapist.findOne({ passwordResetToken: hashedToken, passwordResetExpires: {$gt: Date.now() } })
+        Users.findOne({ passwordResetToken: hashedToken, passwordResetExpires: { $gt: Date.now() } }),
+        Therapist.findOne({ passwordResetToken: hashedToken, passwordResetExpires: { $gt: Date.now() } })
     ]);
 
     const user = client || therapist
 
-    if(!user) return next(new AppError('Token is invalid or has expired', 400))
+    if (!user) return next(new AppError('Token is invalid or has expired', 400))
 
     user.password = req.body.password;
     user.passwordResetToken = undefined;
@@ -333,12 +334,13 @@ anonTherapy.patch('/api/v1/resetPassword/:token', catchAsync(async (req, res, ne
         token
     })
 
-} ))
+}))
 
 anonTherapy.use('/api/v1/admin', adminRoutes)
 anonTherapy.use('/api/v1/client', userRoutes)
 anonTherapy.use('/api/v1/therapist', therapistRoutes)
 anonTherapy.use('/api/v1/messages', messageRoutes)
+anonTherapy.use('/api/v1/notification', notificationRoutes)
 
 
 

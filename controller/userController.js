@@ -59,16 +59,17 @@ exports.createSubscriptions = catchAsync(
 
         const maxSession = sessionsPerWeek * 4
 
-        const endDate = calculateSubscriptionEndDate()
-
         const validateSubscription = await Subscriptions.findOne({userId, isSubscriptionActive: true}).exec()
 
         if(validateSubscription)throw new AppError('You already have an active subscription. Please complete or cancel it before making a new subscription.')
 
-        const newSubscription = await User.createSubscription({userId,  planId: plan._id, maxSession: maxSession, sessionsPerWeek, endDate})
+        const newSubscription = await User.createSubscription({userId,  planId: plan._id, maxSession: maxSession, sessionsPerWeek})
 
 
         if(planName === 'Basic'){
+
+            const endDate = new Date();
+            endDate.setMonth(endDate.getMonth() + 1);
 
             newSubscription.status = 'subscribed'
             newSubscription.isSubscriptionActive = true
@@ -202,13 +203,16 @@ exports.createBooking = catchAsync(
 
         const userId = req.user.id
 
-        const Subscription = await Subscriptions.findOne({userId: userId, isSubscriptionActive: true})
+        const [Subscription, existingSession] = await Promise.all([
+            Subscriptions.findOne({ userId, isSubscriptionActive: true }),
+            SessionPreference.findOne({ userId, isSubscriptionActive: true }),
+        ]);
 
-        const subscriptionId = Subscription._id
-
-        const existingSession = await SessionPreference.findOne({userId: userId, isSubscriptionActive: true})
+        if (!Subscription) throw new AppError('No active subscription found', 404);
 
         if(existingSession)throw new AppError('You already have an existing session preference', 400)
+
+        const subscriptionId = Subscription._id
 
         const {planName, therapyType, sessionDays, preferredTime} = req.body
 
@@ -229,6 +233,15 @@ exports.createBooking = catchAsync(
       const therapistId = selectedTherapist._id
 
         const sessionDates = generateSessionDates(sessionDays,planName)
+
+        if(!Subscription.endDate){
+
+            Subscription.endDate = calculateSubscriptionEndDate(sessionDates[0])
+
+            await Subscription.save()
+
+        }
+
 
         const io = req.app.get('io')
         const notifier = new NotificationService(io)

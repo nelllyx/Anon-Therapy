@@ -1,13 +1,16 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const therapist = require('./model/therapistSchema');
+const env = require('dotenv').config({path: './config.env'});
 
 // Connect to MongoDB (adjust connection string as needed)
 const connectDB = async () => {
     try {
-        await mongoose.connect('mongodb://localhost:27017/anonymous_therapy', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+        await mongoose.connect(process.env.DATABASE_ATLAS, {
+            maxPoolSize: 10,
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
+            bufferCommands: false,
+            dbName: 'anonymous-therapy'
         });
         console.log('MongoDB connected successfully');
     } catch (error) {

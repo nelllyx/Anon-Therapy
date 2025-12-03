@@ -377,13 +377,13 @@ exports.createPasswordResetToken = function (Model){
     return resetToken
 }
 
-exports.calculateSubscriptionEndDate = function (){
-    const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + 1);
+exports.calculateSubscriptionEndDate = function (firstSessionDate){
+    const endDate = new Date(firstSessionDate);
+    endDate.setDate(firstSessionDate.getDate() + 28);
     return endDate;
 }
 
-exports.generateSessionDates = (preferredDays, planType)=> {
+exports.generateSessionDates = (preferredDays, planType) => {
 
     planType = planType.charAt(0).toUpperCase() + planType.slice(1).toLowerCase();
 
@@ -418,6 +418,8 @@ exports.generateSessionDates = (preferredDays, planType)=> {
         date.setDate(date.getDate() + 1);
     }
 
+    const nowInstant = new Date();
+
     while (sessionsCreated < sessionCount) {
 
         const day = date.getDay();
@@ -426,10 +428,13 @@ exports.generateSessionDates = (preferredDays, planType)=> {
 
             const sessionDate = new Date(date);
 
-            // Only add the session if it's in the future (not today or past)
+            if(sessionDate.getTime() > nowInstant.getTime()){
+                // Only add the session if it's in the future (not today or past)
                 sessionDate.setHours(12, 0, 0, 0);
                 sessions.push(sessionDate); // Add to the sessions array
                 sessionsCreated++;          // Increment the counter
+
+            }
 
         }
 

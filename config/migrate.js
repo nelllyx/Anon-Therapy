@@ -7,7 +7,7 @@ const Therapist = require('../model/therapistSchema');
 
 async function migrate() {
 
-    await mongoose.connect(process.env.DATABASE_LOCAL, {
+    await mongoose.connect(process.env.DATABASE_ATLAS, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     })
