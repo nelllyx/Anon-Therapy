@@ -6,7 +6,7 @@ class NotificationService {
     }
 
     // Send notification to a specific user
-    async sendToUser(userId, notification) {
+    async sendToUser(userId, notification, session = null) {
         const notificationData = {
             id: Date.now(),
             type: notification.type || 'info',
@@ -18,13 +18,13 @@ class NotificationService {
         };
 
         // Persist to DB so user sees it even if offline
-        await Notifications.create({
+        await Notifications.create([{
             userId,
             type: notificationData.type,
             title: notificationData.title,
             message: notificationData.message,
             data: notificationData.data,
-        })
+        }], { session: session });
 
         // Try to deliver live if online
         return this.io.sendNotificationToUser ? this.io.sendNotificationToUser(userId, notificationData) : false;
@@ -68,7 +68,7 @@ class NotificationService {
 
     // New therapist assigned to client
 
-    notifyNewTherapistAssignment(userId, sessionData) {
+    notifyNewTherapistAssignment(userId, sessionData, session = null) {
 
         return this.sendToUser(userId, {
             type: 'therapist_assigned',
@@ -80,25 +80,25 @@ class NotificationService {
                 therapistBio: sessionData.therapistBio
 
             }
-        });
+        }, session);
     }
 
 
 
     // New session booking notification
-    notifyNewSessionBooking(therapistId, sessionData) {
+    notifyNewSessionBooking(therapistId, sessionData, session = null) {
         return this.sendToUser(therapistId, {
             type: 'session_booking',
             title: 'New Session Booking',
             message: `You have a new session booking from ${sessionData.clientName}`,
 
-        });
+        }, session);
     }
 
 
     // Session reminder notification
 
-    notifyUserSessionTime(userId, sessionData) {
+    notifyUserSessionTime(userId, sessionData, session = null) {
         return this.sendToUser(userId, {
             type: 'session_time_set',
             title: 'Session Time Sent',
@@ -108,11 +108,11 @@ class NotificationService {
                 sessionTime: sessionData.sessionTime,
                 sessionDate: sessionData.sessionDate
             }
-        });
+        }, session);
     }
 
     // Session reminder notification
-    notifySessionReminder(userId, sessionData) {
+    notifySessionReminder(userId, sessionData, session = null) {
         return this.sendToUser(userId, {
             type: 'session_reminder',
             title: 'Session Reminder',
@@ -122,11 +122,11 @@ class NotificationService {
                 therapistName: sessionData.therapistName,
                 sessionTime: sessionData.sessionTime
             }
-        });
+        }, session);
     }
 
     // Session cancellation notification
-    notifySessionCancellation(userId, sessionData) {
+    notifySessionCancellation(userId, sessionData, session = null) {
         return this.sendToUser(userId, {
             type: 'session_cancelled',
             title: 'Session Cancelled',
@@ -136,11 +136,11 @@ class NotificationService {
                 therapistName: sessionData.therapistName,
                 reason: sessionData.reason
             }
-        });
+        }, session);
     }
 
     // New message notification
-    notifyNewMessage(userId, messageData) {
+    notifyNewMessage(userId, messageData, session = null) {
         return this.sendToUser(userId, {
             type: 'new_message',
             title: 'New Message',
@@ -151,11 +151,11 @@ class NotificationService {
                 senderName: messageData.senderName,
                 preview: messageData.preview
             }
-        });
+        }, session);
     }
 
     // Payment notification
-    notifyPaymentStatus(userId, paymentData) {
+    notifyPaymentStatus(userId, paymentData, session = null) {
         return this.sendToUser(userId, {
             type: 'payment',
             title: 'Payment Update',
@@ -165,7 +165,7 @@ class NotificationService {
                 status: paymentData.status,
                 transactionId: paymentData.transactionId
             }
-        });
+        }, session);
     }
 
     // System maintenance notification
@@ -183,7 +183,7 @@ class NotificationService {
     }
 
     // New therapist registration notification (for admins)
-    notifyNewTherapistRegistration(adminId, therapistData) {
+    notifyNewTherapistRegistration(adminId, therapistData, session = null) {
         return this.sendToUser(adminId, {
             type: 'new_therapist',
             title: 'New Therapist Registration',
@@ -194,7 +194,7 @@ class NotificationService {
                 specialization: therapistData.specialization,
                 email: therapistData.email
             }
-        });
+        }, session);
     }
 
     // Get online users statistics

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const catchAsync = require('../exceptions/catchAsync')
 const therapist = require('../model/therapistSchema')
 const { transporter } = require("../config/nodeMailer");
@@ -8,6 +9,7 @@ const { sendOtpToUserEmail, generateUserOtp } = require("../services/authenticat
 const Session = require('../model/sessionSchema');
 const NotificationService = require('../services/notificationService')
 const { uploadProfilePictureAsync } = require('../services/cloudinaryUploadService');
+const validationService = require('../services/validationService');
 
 const { Types } = require("mongoose");
 
@@ -18,59 +20,74 @@ const uploadProfilePictureTemp = uploadTemp.single('avatar');
 exports.register = [
     uploadProfilePictureTemp,
     catchAsync(async (req, res, next) => {
+        validationService.validateTherapistRegister(req.body);
+        const session = await mongoose.startSession();
+        session.startTransaction();
 
-        const startTime = Date.now();
-        const existingTherapist = await therapist.findOne({ email: req.body.email })
+        try {
+            const startTime = Date.now();
+            const existingTherapist = await therapist.findOne({ email: req.body.email }).session(session)
 
-        if (existingTherapist) {
-            return next(new AppError("Email already exists", 400))
-        }
-
-        // Create therapist with placeholder or empty profile picture
-        const newTherapist = await therapist.create({
-            ...req.body,
-            profilePicture: '' // Will be updated after async upload
-        })
-        console.log('Therapist created:', newTherapist);
-
-        // Generate OTP for the new therapist
-        console.log('Generating OTP...');
-        await generateUserOtp(newTherapist)
-        console.log('OTP generated successfully');
-
-        const endTime = Date.now();
-        console.log(`Request processed in ${endTime - startTime}ms`);
-
-        // Send response immediately
-        res.status(201).json({
-            status: 'success',
-            data: {
-                therapist: newTherapist
+            if (existingTherapist) {
+                throw new AppError("Email already exists", 400)
             }
-        })
 
-        // Send OTP email
-        console.log('Sending OTP email...');
-        const info = await transporter.sendMail(sendOtpToUserEmail(newTherapist.email, newTherapist.otp, newTherapist.firstName))
-        console.log('Email sent successfully:', info.response);
+            // Create therapist with placeholder or empty profile picture
+            // therapist.create returns an array when options are passed, so we take the first element
+            const [newTherapist] = await therapist.create([{
+                ...req.body,
+                profilePicture: '' // Will be updated after async upload
+            }], { session: session })
+            console.log('Therapist created:', newTherapist);
 
+            // Generate OTP for the new therapist
+            console.log('Generating OTP...');
+            await generateUserOtp(newTherapist, session)
+            console.log('OTP generated successfully');
 
-        // Upload profile picture asynchronously after response is sent
-        if (req.file) {
-            // Fire-and-forget async upload with proper error handling
-            await (async () => {
-                try {
-                    await uploadProfilePictureAsync(req.file.path, newTherapist._id);
-                    console.log(`Profile picture uploaded successfully for therapist ${newTherapist._id}`);
-                } catch (error) {
-                    console.error(`Failed to upload profile picture for therapist ${newTherapist._id}:`, error);
+            const endTime = Date.now();
+            console.log(`Request processed in ${endTime - startTime}ms`);
+
+            // Commit transaction before sending response and email
+            await session.commitTransaction();
+            session.endSession();
+
+            // Send response immediately
+            res.status(201).json({
+                status: 'success',
+                data: {
+                    therapist: newTherapist
                 }
-            })();
+            })
+
+            // Send OTP email
+            console.log('Sending OTP email...');
+            const info = await transporter.sendMail(sendOtpToUserEmail(newTherapist.email, newTherapist.otp, newTherapist.firstName))
+            console.log('Email sent successfully:', info.response);
+
+
+            // Upload profile picture asynchronously after response is sent
+            if (req.file) {
+                // Fire-and-forget async upload with proper error handling
+                await (async () => {
+                    try {
+                        await uploadProfilePictureAsync(req.file.path, newTherapist._id);
+                        console.log(`Profile picture uploaded successfully for therapist ${newTherapist._id}`);
+                    } catch (error) {
+                        console.error(`Failed to upload profile picture for therapist ${newTherapist._id}:`, error);
+                    }
+                })();
+            }
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
         }
     })
 ]
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
+    validationService.validateUpdatePassword(req.body);
     const userId = req.user.id
     const { currentPassword, newPassword } = req.body
 
@@ -97,7 +114,7 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 exports.updateProfile = [
     uploadProfilePicture,
     catchAsync(async (req, res, next) => {
-
+        validationService.validateUpdateTherapistProfile(req.body);
         const userId = req.user.id
 
         const userData = req.body
@@ -217,44 +234,54 @@ exports.getSessionsForTheWeek = catchAsync(async (req, res, next) => {
 })
 
 exports.assignTimeForSession = catchAsync(async (req, res, next) => {
+    validationService.validateAssignTimeForSession(req.body);
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    const { sessionId } = req.params
+    try {
+        const { sessionId } = req.params
 
-    const updates = req.body
+        const updates = req.body
 
-    if (!Types.ObjectId.isValid(sessionId)) {
-        return res.status(400).json({ error: 'Invalid session ID' });
+        if (!Types.ObjectId.isValid(sessionId)) {
+            throw new AppError('Invalid session ID', 400);
+        }
+
+
+        const validSession = await Session.findByIdAndUpdate(
+            sessionId,
+            { $set: updates },
+            { new: true, session: session }
+        ).populate('therapistId', 'firstName lastName ');
+
+        if (!validSession) throw new AppError("Session not found", 400)
+
+        // Convert userId to string to match JWT token format (socket stores string IDs)
+        const userId = validSession.userId.toString()
+        const io = req.app.get('io')
+        const notifier = new NotificationService(io)
+
+        // Send notification - the service will save to DB and try to deliver if user is online
+        const notify = await notifier.notifyUserSessionTime(userId, {
+            therapistName: validSession.therapistId.firstName,
+            sessionTime: validSession.scheduledTime,
+            sessionDate: validSession.date,
+        }, session)
+
+        console.log('Notification sent:', notify)
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(200).json({
+            status: 'success',
+            validSession
+        })
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        throw error;
     }
-
-
-    const validSession = await Session.findByIdAndUpdate(
-        sessionId,
-        { $set: updates },
-        { new: true }
-    ).populate('therapistId', 'firstName lastName ');
-
-    if (!validSession) return next(new AppError("Session not found", 400))
-
-    // Convert userId to string to match JWT token format (socket stores string IDs)
-    const userId = validSession.userId.toString()
-    const io = req.app.get('io')
-    const notifier = new NotificationService(io)
-
-    // Send notification - the service will save to DB and try to deliver if user is online
-    const notify = await notifier.notifyUserSessionTime(userId, {
-        therapistName: validSession.therapistId.firstName,
-        sessionTime: validSession.scheduledTime,
-        sessionDate: validSession.date,
-    })
-
-    console.log('Notification sent:', notify)
-
-    res.status(200).json({
-        status: 'success',
-        validSession
-    })
-
-
 })
 
 exports.getDashboard = catchAsync(async (req, res, next) => {
@@ -441,4 +468,3 @@ exports.getDashboard = catchAsync(async (req, res, next) => {
         }
     });
 });
-

@@ -8,6 +8,8 @@ const cookieParser = require('cookie-parser')
 const AppError = require('./exceptions/AppErrors');
 const catchAsync = require('./exceptions/catchAsync')
 dotenv.config({ path: './config.env' })
+const helmet = require('helmet');
+const compression = require('compression');
 
 
 const userRoutes = require('./routes/userRoutes')
@@ -20,6 +22,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const auth = require("./services/authenticationService");
 const Users = require("./model/userSchema");
 const Therapist = require("./model/therapistSchema");
+const RefreshToken = require("./model/refreshToken");
 const { CLIENT, THERAPIST } = require("./config/userRoles");
 const { transporter } = require("./config/nodeMailer");
 const { sendPasswordResetTokenToUserEmail, generateUserOtp, sendOtpToUserEmail, protect } = require("./services/authenticationService");
@@ -28,9 +31,22 @@ const anonTherapy = express()
 
 anonTherapy.use(express.json())
 anonTherapy.use(cookieParser());
+anonTherapy.use(helmet());
+
+anonTherapy.use(compression());
 
 anonTherapy.use(cors({ origin: 'http://localhost:5173', credentials: true }))
 
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: {
+        success: false,
+        error: 'RATE_LIMIT_EXCEEDED',
+        message: 'Too many requests from this IP, please try again later.',
+    },
+});
 
 const otpResendLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -118,6 +134,9 @@ anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
             }
             await auth.otpVerification(otp, Users, id);
 
+            user.accountStatus = 'active'
+            user.save()
+
             const refreshToken = await auth.saveRefreshToken(user._id, userType)
             const accessToken = auth.createAccessToken(user._id, user.role);
 
@@ -143,6 +162,9 @@ anonTherapy.post('/api/v1/verify-otp', catchAsync(async (req, res, next) => {
 
             const refreshToken = await auth.saveRefreshToken(user._id, userType)
             const accessToken = auth.createAccessToken(user._id, user.role);
+
+            user.accountStatus = 'active'
+            user.save()
 
             auth.setAuthCookies(res, accessToken, refreshToken)
 
@@ -238,32 +260,51 @@ anonTherapy.get('/api/v1/auth/token', protect, (req, res) => {
 
 })
 
-anonTherapy.get('/api/v1/validate', (req, res) => {
+anonTherapy.post('/api/v1/fetch-accessTok', catchAsync(async (req, res, next) => {
 
-    const ACCESS_TOKEN_COOKIE_NAME = 'access_token'
+    const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
+    const refreshTokenCookie = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
 
-    const token = req.cookies[ACCESS_TOKEN_COOKIE_NAME];
-
-    if (!token) {
-        return res.status(401).json({
-            success: false,
-            error: 'No token provided',
-        });
+    if (!refreshTokenCookie) {
+        return next(new AppError('No refresh token provided', 401));
     }
 
-    try {
-        jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-        res.status(200).json({
-            success: true,
-            message: 'Token is valid',
-        });
-    } catch (err) {
-        res.status(401).json({
-            success: false,
-            error: 'Invalid or expired token',
-        });
+    const parts = refreshTokenCookie.split('.');
+    if (parts.length !== 2) {
+        return next(new AppError('Invalid refresh token format', 401));
     }
-})
+
+    const [tokenId, rawToken] = parts;
+
+    const refreshTokenDoc = await RefreshToken.findById(tokenId);
+
+    if (!refreshTokenDoc) {
+        return next(new AppError('Invalid refresh token', 401));
+    }
+
+    if (refreshTokenDoc.revoked) {
+        return next(new AppError('Refresh token revoked', 401));
+    }
+
+    if (refreshTokenDoc.expiresAt < Date.now()) {
+        return next(new AppError('Refresh token expired', 401));
+    }
+
+    const isValid = await refreshTokenDoc.validateToken(rawToken);
+
+    if (!isValid) {
+        return next(new AppError('Invalid refresh token', 401));
+    }
+
+    const accessToken = auth.createAccessToken(refreshTokenDoc.userId, refreshTokenDoc.userType);
+
+    auth.setAuthCookies(res, accessToken, refreshTokenCookie);
+
+    res.status(200).json({
+        success: true,
+        message: 'Access token refreshed',
+    });
+}))
 
 anonTherapy.post('/api/v1/forgotPassword', catchAsync(async (req, res, next) => {
 
@@ -336,11 +377,11 @@ anonTherapy.patch('/api/v1/resetPassword/:token', catchAsync(async (req, res, ne
 
 }))
 
-anonTherapy.use('/api/v1/admin', adminRoutes)
-anonTherapy.use('/api/v1/client', userRoutes)
-anonTherapy.use('/api/v1/therapist', therapistRoutes)
-anonTherapy.use('/api/v1/messages', messageRoutes)
-anonTherapy.use('/api/v1/notification', notificationRoutes)
+anonTherapy.use('/api/v1/admin', limiter, adminRoutes)
+anonTherapy.use('/api/v1/client', limiter, userRoutes)
+anonTherapy.use('/api/v1/therapist', limiter, therapistRoutes)
+anonTherapy.use('/api/v1/messages', limiter, messageRoutes)
+anonTherapy.use('/api/v1/notifications', limiter, notificationRoutes)
 
 
 

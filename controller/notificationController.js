@@ -24,8 +24,8 @@ exports.getMissedNotifications = catchAsync(async (req, res, next) => {
     });
 });
 
-
 exports.markAsRead = catchAsync(async (req, res, next) => {
+
     const notificationId = req.params.id;
     const userId = req.user.id;
 
@@ -47,6 +47,7 @@ exports.markAsRead = catchAsync(async (req, res, next) => {
 });
 
 exports.markAllAsRead = catchAsync(async (req, res, next) => {
+
     const userId = req.user.id;
 
     await Notifications.updateMany(

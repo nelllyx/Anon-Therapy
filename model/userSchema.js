@@ -10,7 +10,10 @@ const userSchema = new mongoose.Schema({
     username: {
         type: String,
         required: [true, "Username required"],
-        unique: true
+        unique: true,
+        trim: true,
+        minlength: [2, 'Last name must be at least 2 characters'],
+        maxlength: [50, 'Last name cannot exceed 50 characters']
     },
 
     email: {
@@ -18,13 +21,15 @@ const userSchema = new mongoose.Schema({
         required: [true, "Email address required"],
         unique: true,
         lowercase: true,
-        validate: [validator.isEmail, "Please enter a valid email"]
+        validate: [validator.isEmail, "Please enter a valid email"],
+        trim: true,
+        match: [/^\\w+([.-]?\\w+)*@\\w+([.-]?\\w+)*(\\.\\w{2,3})+$/, 'Please enter a valid email'],
     },
 
     password: {
         type: String,
-        required: [true, "Please enter your password"],
-        minLength: 8,
+        required: [true, 'Password is required'],
+        minlength: [8, 'Password must be at least 8 characters'],
     },
 
     gender:{
@@ -43,6 +48,12 @@ const userSchema = new mongoose.Schema({
     isVerified:{
         type:Boolean,
         default: false
+    },
+
+    accountStatus: {
+        type: String,
+        enum: ['pending', 'active', 'suspended', 'closed'],
+        default: 'pending'
     },
 
     otp:{

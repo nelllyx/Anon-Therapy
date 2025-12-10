@@ -17,6 +17,7 @@ router.get('/payment-history', userController.checkPaymentHistory);
 router.get('/subscription/plan', userController.checkActiveSubscription);
 router.get('/sessions', userController.getUpcomingSessions);
 router.get('/dashboard', userController.getDashboard);
+router.patch('/reschedule-session/:id', userController.rescheduleSession);
 
 
 

@@ -5,15 +5,15 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const userRoles = require('../config/userRoles')
 
-exports.createUser = async(userData)=>{
-    return User.create(userData)
+exports.createUser = async (userData, session = null) => {
+    return User.create([userData], { session: session }).then(doc => doc[0]);
 }
 
-exports.createSubscription = async(bookingData) =>{
-    return  Subscription.create(bookingData)
+exports.createSubscription = async (bookingData, session = null) => {
+    return Subscription.create([bookingData], { session: session }).then(doc => doc[0]);
 }
 
-exports.register = async (userData) => {
+exports.register = async (userData, session = null) => {
     const { username, email, password, role = userRoles.Client } = userData;
 
     // Validate role
@@ -24,18 +24,19 @@ exports.register = async (userData) => {
     // Check if user exists
     const existingUser = await User.findOne({
         $or: [{ email }, { username }]
-    });
+    }).session(session);
 
     if (existingUser) {
         throw new AppError('User with this email or username already exists', 400);
     }
 
     // Create new user
-    const user = await User.create({
+    // User.create returns an array when options are passed, so we take the first element
+    const [user] = await User.create([{
         ...userData,
         password: await bcrypt.hash(password, 12),
         isVerified: role === userRoles.Therapist // Auto-verify therapists
-    });
+    }], { session: session });
 
     return user;
 };
@@ -77,11 +78,11 @@ exports.getProfile = async (userId) => {
     return user;
 };
 
-exports.updateProfile = async (userId, updateData) => {
+exports.updateProfile = async (userId, updateData, session = null) => {
     const user = await User.findByIdAndUpdate(
         userId,
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true, session: session }
     ).select('-password');
 
     if (!user) {
@@ -91,8 +92,8 @@ exports.updateProfile = async (userId, updateData) => {
     return user;
 };
 
-exports.changePassword = async (userId, currentPassword, newPassword) => {
-    const user = await User.findById(userId);
+exports.changePassword = async (userId, currentPassword, newPassword, session = null) => {
+    const user = await User.findById(userId).session(session);
 
     if (!user) {
         throw new AppError('User not found', 404);
@@ -106,7 +107,7 @@ exports.changePassword = async (userId, currentPassword, newPassword) => {
 
     // Update password
     user.password = await bcrypt.hash(newPassword, 12);
-    await user.save();
+    await user.save({ session: session });
 
     return { message: 'Password updated successfully' };
 };

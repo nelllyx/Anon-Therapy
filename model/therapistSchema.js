@@ -7,24 +7,32 @@ const therapistSchema = new mongoose.Schema({
 
     firstName: {
         type: String,
-        required: [true, 'Please enter your first name']
+        required: [true, 'Please enter your first name'],
+        trim: true,
+        minlength: [2, 'Last name must be at least 2 characters'],
+        maxlength: [50, 'Last name cannot exceed 50 characters']
     },
 
     lastName: {
         type: String,
-        required: [true, 'Please enter your last name']
+        required: [true, 'Please enter your last name'],
+        trim: true,
+        minlength: [2, 'Last name must be at least 2 characters'],
+        maxlength: [50, 'Last name cannot exceed 50 characters']
     },
     email: {
       type: String,
       unique: true,
       required: [true, 'please enter a unique email'],
         lowercase: true,
+        trim: true,
+        match: [/^\\w+([.-]?\\w+)*@\\w+([.-]?\\w+)*(\\.\\w{2,3})+$/, 'Please enter a valid email'],
         validate: [validator.isEmail, "Please enter a valid email"]
     },
     password: {
         type: String,
         required: [true, "Please enter your password"],
-        minLength: 8,
+        minlength: [8, 'Password must be at least 8 characters'],
     },
 
     gender:{
@@ -64,6 +72,11 @@ const therapistSchema = new mongoose.Schema({
         avatar: String,
     },
 
+    accountStatus: {
+        type: String,
+        enum: ['pending', 'active', 'suspended', 'closed'],
+        default: 'pending'
+    },
 
     status: {
         type: String,

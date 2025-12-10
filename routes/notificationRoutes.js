@@ -9,7 +9,7 @@ router.use(authService.protect);
 
 router.get('/get-notifications', notificationController.getMissedNotifications);
 router.patch('/mark-read/:id', notificationController.markAsRead);
-router.patch('/mark-all-read', notificationController.markAllAsRead);
+router.patch('/read-all', notificationController.markAllAsRead);
 router.delete('/delete-all', notificationController.deleteAll);
 router.delete('/delete/:id', notificationController.deleteSpecificNotification);
 
