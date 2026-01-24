@@ -29,6 +29,12 @@ const connectDB = async () => {
 const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
+// Helper to get random unique elements from array
+const getRandomElements = (arr, count) => {
+    const shuffled = [...arr].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+};
+
 const seedSessionData = async () => {
     try {
         console.log('Starting data seeding...');
@@ -47,36 +53,45 @@ const seedSessionData = async () => {
             return;
         }
 
-        // Ensure Plans exist
+        // Ensure Plans exist with correct pricing and sessions
+        // We'll update existing plans or create new ones if missing
+        const defaultPlans = [
+            {
+                name: 'Basic',
+                price: 0, // Free
+                features: ['1 session/week', 'Chat support'],
+                sessionsPerWeek: 1
+            },
+            {
+                name: 'Standard',
+                price: 50000,
+                features: ['2 sessions/week', 'Chat support', 'Video calls'],
+                sessionsPerWeek: 2
+            },
+            {
+                name: 'Premium',
+                price: 100000,
+                features: ['4 sessions/week', '24/7 Support', 'Video calls'],
+                sessionsPerWeek: 4
+            }
+        ];
+
         if (plans.length === 0) {
             console.log('No plans found. Creating default plans...');
-            const defaultPlans = [
-                {
-                    name: 'Basic',
-                    price: 50,
-                    features: ['1 session/week', 'Chat support'],
-                    sessionsPerWeek: 1
-                },
-                {
-                    name: 'Standard',
-                    price: 120,
-                    features: ['2 sessions/week', 'Chat support', 'Video calls'],
-                    sessionsPerWeek: 2
-                },
-                {
-                    name: 'Premium',
-                    price: 200,
-                    features: ['4 sessions/week', '24/7 Support', 'Video calls'],
-                    sessionsPerWeek: 4
-                }
-            ];
             plans = await Plans.insertMany(defaultPlans);
             console.log('Created default plans.');
+        } else {
+            // Update existing plans to match new requirements
+            for (const defPlan of defaultPlans) {
+                await Plans.findOneAndUpdate({ name: defPlan.name }, defPlan, { upsert: true });
+            }
+            plans = await Plans.find({}); // Refresh plans
+            console.log('Updated existing plans.');
         }
 
         console.log(`Found ${clients.length} clients, ${therapists.length} therapists, and ${plans.length} plans.`);
 
-        // Clear existing session-related data to avoid duplicates/conflicts during re-runs
+        // Clear existing session-related data
         await Subscriptions.deleteMany({});
         await UserSubscription.deleteMany({});
         await ClientSessions.deleteMany({});
@@ -84,12 +99,12 @@ const seedSessionData = async () => {
 
         let subscriptionCount = 0;
         let sessionCount = 0;
+        let preferenceCount = 0;
 
         for (const client of clients) {
             // 2. Create Subscription
             const randomPlan = getRandomElement(plans);
 
-            // Calculate start and end dates
             const startDate = new Date();
             const endDate = new Date();
             endDate.setMonth(endDate.getMonth() + 1);
@@ -102,59 +117,96 @@ const seedSessionData = async () => {
                 startDate: startDate,
                 endDate: endDate,
                 sessionsPerWeek: randomPlan.sessionsPerWeek,
-                maxSession: randomPlan.sessionsPerWeek * 4 // Approx 4 weeks
+                maxSession: randomPlan.sessionsPerWeek * 4
             });
             subscriptionCount++;
 
             // 3. Create Session Preference
-            // Get allowed therapy types for the plan
-            const allowedTherapies = therapyTypesConfig[randomPlan.name];
+            const allowedTherapies = therapyTypesConfig[randomPlan.name] || ['General Counseling']; // Fallback
             const selectedTherapy = getRandomElement(allowedTherapies);
 
-            await UserSubscription.create({
+            const availableDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            const selectedDays = getRandomElements(availableDays, randomPlan.sessionsPerWeek);
+
+            const preference = await UserSubscription.create({
                 userId: client._id,
                 planId: randomPlan._id,
                 subscriptionId: subscription._id,
                 therapyType: selectedTherapy,
-                sessionDays: [getRandomElement(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])],
+                sessionDays: selectedDays,
                 preferredTime: getRandomElement(['Morning', 'Afternoon', 'Evening'])
             });
+            preferenceCount++;
 
-            // 4. Create Sessions
-            // Assign a single therapist for this client for all sessions
-            const assignedTherapist = getRandomElement(therapists);
+            // 4. Assign Therapist
+            // Find therapist with matching specialization
+            // Note: Specialization in Therapist model is a string, therapyType is a string.
+            // We need to ensure case-insensitive matching or exact matching depending on data.
+            // Assuming exact match or close enough for seeding.
+            const eligibleTherapists = therapists.filter(t =>
+                t.specialization && t.specialization.toLowerCase() === selectedTherapy.toLowerCase()
+            );
 
-            // Create a few sessions for this subscription
-            const numSessions = getRandomInt(1, 3);
-            for (let i = 0; i < numSessions; i++) {
-                const sessionStatus = getRandomElement(['upcoming', 'completed', 'canceled']);
+            // If no exact match, pick a random therapist to ensure data generation proceeds
+            const assignedTherapist = eligibleTherapists.length > 0
+                ? getRandomElement(eligibleTherapists)
+                : getRandomElement(therapists);
 
-                const sessionDate = new Date();
-                if (sessionStatus === 'completed') {
-                    sessionDate.setDate(sessionDate.getDate() - getRandomInt(1, 10));
-                } else {
-                    sessionDate.setDate(sessionDate.getDate() + getRandomInt(1, 10));
+            if (!assignedTherapist) {
+                console.log(`No therapist found for client ${client.username} with therapy ${selectedTherapy}`);
+                continue;
+            }
+
+            // 5. Create Sessions
+            // Generate sessions for the next 4 weeks based on selected days
+            const sessionsToCreate = [];
+            const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 };
+
+            let currentDate = new Date();
+            // Reset to start of day
+            currentDate.setHours(0, 0, 0, 0);
+
+            // Generate sessions for 4 weeks
+            for (let week = 0; week < 4; week++) {
+                for (const dayName of selectedDays) {
+                    const targetDay = dayMap[dayName];
+                    const sessionDate = new Date(currentDate);
+
+                    // Calculate date for this day in the current week
+                    // This is a simplified logic: find next occurrence of the day
+                    const currentDay = sessionDate.getDay();
+                    let daysUntilTarget = targetDay - currentDay;
+                    if (daysUntilTarget <= 0) daysUntilTarget += 7; // Move to next week if day passed
+
+                    // Adjust for the specific week iteration
+                    sessionDate.setDate(sessionDate.getDate() + daysUntilTarget + (week * 7));
+
+                    const sessionStatus = getRandomElement(['upcoming', 'completed', 'upcoming']); // Bias towards upcoming
+
+                    sessionsToCreate.push({
+                        userId: client._id,
+                        subscriptionId: subscription._id,
+                        therapistId: assignedTherapist._id,
+                        therapyType: selectedTherapy,
+                        date: sessionDate,
+                        preferredTime: preference.preferredTime,
+                        scheduledTime: `${getRandomInt(9, 17).toString().padStart(2, '0')}:00`,
+                        duration: 45,
+                        status: sessionStatus,
+                        notes: sessionStatus === 'completed' ? `Session notes for ${client.username}` : ''
+                    });
                 }
+            }
 
-                await ClientSessions.create({
-                    userId: client._id,
-                    subscriptionId: subscription._id,
-                    therapistId: assignedTherapist._id,
-                    therapyType: selectedTherapy,
-                    date: sessionDate,
-                    preferredTime: getRandomElement(['Morning', 'Afternoon', 'Evening']),
-                    scheduledTime: `${getRandomInt(9, 17).toString().padStart(2, '0')}:00`,
-                    duration: 45, // Standard session
-                    status: sessionStatus,
-                    notes: `Session notes for ${client.username}`
-                });
-                sessionCount++;
+            if (sessionsToCreate.length > 0) {
+                await ClientSessions.insertMany(sessionsToCreate);
+                sessionCount += sessionsToCreate.length;
             }
         }
 
         console.log(`Successfully created:`);
         console.log(`- ${subscriptionCount} Subscriptions`);
-        console.log(`- ${subscriptionCount} Session Preferences`);
+        console.log(`- ${preferenceCount} Session Preferences`);
         console.log(`- ${sessionCount} Sessions`);
 
     } catch (error) {

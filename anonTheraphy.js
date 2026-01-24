@@ -26,7 +26,6 @@ const RefreshToken = require("./model/refreshToken");
 const { CLIENT, THERAPIST } = require("./config/userRoles");
 const { transporter } = require("./config/nodeMailer");
 const { sendPasswordResetTokenToUserEmail, generateUserOtp, sendOtpToUserEmail, protect } = require("./services/authenticationService");
-const jwt = require("jsonwebtoken");
 const anonTherapy = express()
 
 anonTherapy.use(express.json())

@@ -21,12 +21,12 @@ const therapistSchema = new mongoose.Schema({
         maxlength: [50, 'Last name cannot exceed 50 characters']
     },
     email: {
-      type: String,
-      unique: true,
-      required: [true, 'please enter a unique email'],
+        type: String,
+        unique: true,
+        required: [true, 'please enter a unique email'],
         lowercase: true,
         trim: true,
-        match: [/^\\w+([.-]?\\w+)*@\\w+([.-]?\\w+)*(\\.\\w{2,3})+$/, 'Please enter a valid email'],
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email'],
         validate: [validator.isEmail, "Please enter a valid email"]
     },
     password: {
@@ -35,7 +35,7 @@ const therapistSchema = new mongoose.Schema({
         minlength: [8, 'Password must be at least 8 characters'],
     },
 
-    gender:{
+    gender: {
         type: String,
         enum: ['male', 'female'],
         required: true
@@ -49,8 +49,8 @@ const therapistSchema = new mongoose.Schema({
 
     yearsOfExperience: {
         type: Number,
-        maxLength:2,
-      required: true,
+        maxLength: 2,
+        required: true,
     },
 
     specialization: {
@@ -61,8 +61,8 @@ const therapistSchema = new mongoose.Schema({
 
     licenseNo: {
         type: Number,
-        required:true,
-        unique:true
+        required: true,
+        unique: true
     },
 
     profile: {
@@ -84,8 +84,8 @@ const therapistSchema = new mongoose.Schema({
         default: 'active'
     },
 
-    isVerified:{
-        type:Boolean,
+    isVerified: {
+        type: Boolean,
         default: false
     },
 
@@ -97,17 +97,17 @@ const therapistSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: Object.values(userRoles),
-        default:  userRoles.THERAPIST,
+        default: userRoles.THERAPIST,
         required: true,
 
     },
 
-    otp:{
+    otp: {
         type: String,
         default: null
     },
 
-    otpCreationTime:{
+    otpCreationTime: {
         type: Date,
         default: null
     },
@@ -115,33 +115,33 @@ const therapistSchema = new mongoose.Schema({
     currentClients: {
         type: Number,
         default: 0
-     },
+    },
 
     maxClients: Number,
-    
+
 })
 
-therapistSchema.pre('save',async function (next){
-    if(!this.isModified('password')) return next()
+therapistSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next()
 
     try {
         const salt = await bcrypt.genSalt(10)
         this.password = await bcrypt.hash(this.password, salt)
         next()
-    }catch(err){
+    } catch (err) {
         next(err)
     }
 
 })
 
-therapistSchema.methods.correctPassword = async function (candidatePassword){
+therapistSchema.methods.correctPassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password)
 }
 
 therapistSchema.set('toJSON', {
     transform: (doc, ret) => {
         delete ret.password;
-        delete  ret.otp;
+        delete ret.otp;
         return ret;
     }
 });
